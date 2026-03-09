@@ -108,46 +108,165 @@ function buildNightCurve(ra, dec, lat, lon, date, horizonProfile) {
   return points;
 }
 
-// ─── Deep-Sky Catalogue ───────────────────────────────────────────────────────
+// ─── OpenNGC Fetch & Parser ───────────────────────────────────────────────────
 
-const CATALOGUE = [
-  // Nebulae – narrow band
-  { id: "M42", name: "Nebulosa di Orione", ra: 83.82, dec: -5.39, type: "Nebulosa a emissione", mag: 4.0, size: 65, mode: "narrowband", filters: "Hα, OIII, SII", expHours: "3–6h", description: "Icona invernale, ricca in Hα" },
-  { id: "M1", name: "Nebulosa del Granchio", ra: 83.63, dec: 22.01, type: "Resto di supernova", mag: 8.4, size: 7, mode: "narrowband", filters: "Hα, OIII", expHours: "4–8h", description: "Filamenti delicati, ottima per narrowband" },
-  { id: "NGC7293", name: "Nebulosa Elica", ra: 337.41, dec: -20.84, type: "Nebulosa planetaria", mag: 7.3, size: 28, mode: "narrowband", filters: "Hα, OIII", expHours: "5–10h", description: "La più grande nebulosa planetaria del cielo" },
-  { id: "NGC7662", name: "Palla di Neve Blu", ra: 351.0, dec: 42.54, type: "Nebulosa planetaria", mag: 8.3, size: 0.5, mode: "narrowband", filters: "OIII, Hα", expHours: "2–4h", description: "Piccola ma brillante in OIII" },
-  { id: "M57", name: "Nebulosa Anello", ra: 283.4, dec: 33.03, type: "Nebulosa planetaria", mag: 8.8, size: 1.4, mode: "narrowband", filters: "Hα, OIII", expHours: "3–5h", description: "Gioiello estivo in Lyra" },
-  { id: "M27", name: "Nebulosa Manubrio", ra: 299.9, dec: 22.72, type: "Nebulosa planetaria", mag: 7.4, size: 8, mode: "narrowband", filters: "Hα, OIII, SII", expHours: "4–8h", description: "Grandissima planetaria, SHO spettacolare" },
-  { id: "IC1805", name: "Nebulosa Cuore", ra: 38.2, dec: 61.45, type: "Nebulosa a emissione", mag: 6.5, size: 150, mode: "narrowband", filters: "Hα, OIII, SII", expHours: "8–15h", description: "SHO palette sorprendente" },
-  { id: "IC1848", name: "Nebulosa Anima", ra: 43.3, dec: 60.47, type: "Nebulosa a emissione", mag: 6.5, size: 150, mode: "narrowband", filters: "Hα, OIII, SII", expHours: "8–15h", description: "Coppia con IC1805, perfetta per mosaic" },
-  { id: "NGC2244", name: "Nebulosa Rosetta", ra: 97.9, dec: 4.97, type: "Nebulosa a emissione", mag: 6.0, size: 80, mode: "narrowband", filters: "Hα, OIII, SII", expHours: "6–12h", description: "Struttura circolare magnificente" },
-  { id: "NGC6992", name: "Velo Est (Cigno)", ra: 313.8, dec: 31.73, type: "Resto di supernova", mag: 7.0, size: 60, mode: "narrowband", filters: "Hα, OIII", expHours: "6–12h", description: "Filamenti sottilissimi, serve alta risoluzione" },
-  { id: "NGC6960", name: "Velo Ovest (Cigno)", ra: 312.7, dec: 30.72, type: "Resto di supernova", mag: 7.0, size: 70, mode: "narrowband", filters: "Hα, OIII", expHours: "6–12h", description: "La 'scopa di Witch' – OIII dominante" },
-  { id: "M16", name: "Nebulosa Aquila", ra: 274.7, dec: -13.79, type: "Nebulosa + ammasso", mag: 6.0, size: 35, mode: "narrowband", filters: "Hα, OIII, SII", expHours: "5–10h", description: "Pilastri della Creazione in SHO" },
-  { id: "M17", name: "Nebulosa Omega", ra: 275.2, dec: -16.18, type: "Nebulosa a emissione", mag: 6.0, size: 40, mode: "narrowband", filters: "Hα, OIII, SII", expHours: "5–10h", description: "Una delle più luminose del cielo" },
-  { id: "NGC6888", name: "Nebulosa Mezzaluna", ra: 303.1, dec: 38.35, type: "Nebulosa a emissione", mag: 7.4, size: 18, mode: "narrowband", filters: "Hα, OIII", expHours: "5–8h", description: "Vento stellare di WR 136" },
-  { id: "NGC281", name: "Nebulosa Pacman", ra: 13.2, dec: 56.62, type: "Nebulosa a emissione", mag: 7.4, size: 35, mode: "narrowband", filters: "Hα, OIII, SII", expHours: "6–10h", description: "Autunnale, ottima circumpolare nord" },
-  { id: "IC5070", name: "Nebulosa Pellicano", ra: 312.0, dec: 44.4, type: "Nebulosa a emissione", mag: 8.0, size: 80, mode: "narrowband", filters: "Hα, OIII, SII", expHours: "8–14h", description: "Adiacente a NGC7000" },
-  { id: "NGC7000", name: "Nebulosa Nord America", ra: 314.0, dec: 44.5, type: "Nebulosa a emissione", mag: 4.0, size: 120, mode: "narrowband", filters: "Hα, OIII, SII", expHours: "6–12h", description: "Estiva/autunnale, grandissima" },
-  { id: "Sh2-106", name: "Sh2-106", ra: 306.1, dec: 37.38, type: "Nebulosa bilobata", mag: 10.0, size: 3, mode: "narrowband", filters: "Hα, OIII", expHours: "4–8h", description: "Sagoma a clessidra in narrow" },
-  // Galaxies – broadband
-  { id: "M31", name: "Galassia di Andromeda", ra: 10.68, dec: 41.27, type: "Galassia spirale", mag: 3.4, size: 190, mode: "broadband", filters: "LRGB / OSC", expHours: "4–10h", description: "Target autunnale per eccellenza, mosaico consigliato" },
-  { id: "M33", name: "Galassia Triangolo", ra: 23.46, dec: 30.66, type: "Galassia spirale", mag: 5.7, size: 70, mode: "broadband", filters: "LRGB / Hα boost", expHours: "6–12h", description: "Bracci ricchi di HII, ottima con Hα blend" },
-  { id: "M81", name: "Galassia di Bode", ra: 148.9, dec: 69.07, type: "Galassia spirale", mag: 6.9, size: 21, mode: "broadband", filters: "LRGB / OSC", expHours: "5–10h", description: "Coppia magnificente con M82" },
-  { id: "M82", name: "Galassia Sigaro", ra: 148.97, dec: 69.68, type: "Galassia irregolare", mag: 8.4, size: 9, mode: "narrowband", filters: "Hα, LRGB blend", expHours: "5–10h", description: "Venti galattici spettacolari in Hα" },
-  { id: "M51", name: "Galassia Vortice", ra: 202.5, dec: 47.2, type: "Galassia spirale", mag: 8.4, size: 11, mode: "broadband", filters: "LRGB / OSC", expHours: "6–12h", description: "Interazione con NGC5195, primavera" },
-  { id: "M101", name: "Galassia Girandola", ra: 210.8, dec: 54.35, type: "Galassia spirale", mag: 7.9, size: 22, mode: "broadband", filters: "LRGB / OSC", expHours: "6–12h", description: "Bracci asimmetrici a bassa brillanza superficiale" },
-  { id: "M104", name: "Galassia Sombrero", ra: 190.0, dec: -11.62, type: "Galassia spirale", mag: 8.0, size: 9, mode: "broadband", filters: "LRGB / OSC", expHours: "5–10h", description: "Banda di polvere iconica" },
-  { id: "NGC4565", name: "Galassia Ago", ra: 189.1, dec: 25.99, type: "Galassia a taglio", mag: 9.6, size: 16, mode: "broadband", filters: "LRGB / OSC", expHours: "6–12h", description: "Profilo edge-on perfetto" },
-  { id: "M77", name: "NGC1068 / M77", ra: 40.67, dec: -0.01, type: "Galassia di Seyfert", mag: 8.9, size: 7, mode: "broadband", filters: "LRGB / OSC", expHours: "5–8h", description: "AGN brillante, dettaglio nel nucleo" },
-  // Clusters – broadband
-  { id: "M45", name: "Pleiadi + nebulosità", ra: 56.87, dec: 24.11, type: "Ammasso + nebulosa riflessione", mag: 1.6, size: 120, mode: "broadband", filters: "LRGB / OSC", expHours: "3–8h", description: "Nebulosità blu attorno alle stelle" },
-  { id: "M13", name: "Ammasso Ercole", ra: 250.4, dec: 36.46, type: "Ammasso globulare", mag: 5.8, size: 20, mode: "broadband", filters: "LRGB / OSC", expHours: "2–4h", description: "Il più bello ammasso globulare nord" },
-  { id: "M3", name: "NGC5272 / M3", ra: 205.5, dec: 28.37, type: "Ammasso globulare", mag: 6.2, size: 18, mode: "broadband", filters: "LRGB / OSC", expHours: "2–4h", description: "Rivale di M13, primavera" },
-  { id: "NGC869", name: "Doppio Ammasso (h Persei)", ra: 34.4, dec: 57.13, type: "Ammasso aperto doppio", mag: 4.3, size: 30, mode: "broadband", filters: "LRGB / OSC", expHours: "1–3h", description: "Spettacolo cromatico di stelle giovani" },
+// Maps OpenNGC type codes → our internal type labels + imaging mode
+const ONGC_TYPE_MAP = {
+  "GX":   { type: "Galassia",              mode: "broadband",  filters: "LRGB / OSC" },
+  "GX?":  { type: "Galassia (incerta)",    mode: "broadband",  filters: "LRGB / OSC" },
+  "OC":   { type: "Ammasso aperto",        mode: "broadband",  filters: "LRGB / OSC" },
+  "GC":   { type: "Ammasso globulare",     mode: "broadband",  filters: "LRGB / OSC" },
+  "PN":   { type: "Nebulosa planetaria",   mode: "narrowband", filters: "Hα, OIII" },
+  "BN":   { type: "Nebulosa a riflessione",mode: "broadband",  filters: "LRGB / OSC" },
+  "EN":   { type: "Nebulosa a emissione",  mode: "narrowband", filters: "Hα, OIII, SII" },
+  "RN":   { type: "Nebulosa a riflessione",mode: "broadband",  filters: "LRGB / OSC" },
+  "SNR":  { type: "Resto di supernova",    mode: "narrowband", filters: "Hα, OIII" },
+  "SR":   { type: "Resto di supernova",    mode: "narrowband", filters: "Hα, OIII" },
+  "DN":   { type: "Nebulosa oscura",       mode: "broadband",  filters: "LRGB / OSC" },
+  "HII":  { type: "Regione HII",           mode: "narrowband", filters: "Hα, OIII, SII" },
+  "Neb":  { type: "Nebulosa",             mode: "narrowband", filters: "Hα, OIII" },
+  "NF":   { type: "Non trovato",           mode: "broadband",  filters: "—" },
+  "MWSC": { type: "Ammasso stellare",      mode: "broadband",  filters: "LRGB / OSC" },
+  "OCl":  { type: "Ammasso aperto",        mode: "broadband",  filters: "LRGB / OSC" },
+  "GCl":  { type: "Ammasso globulare",     mode: "broadband",  filters: "LRGB / OSC" },
+  "Cl+N": { type: "Ammasso + nebulosa",    mode: "narrowband", filters: "Hα, OIII, SII" },
+  "*Ass": { type: "Associazione stellare", mode: "broadband",  filters: "LRGB / OSC" },
+  "EmN":  { type: "Nebulosa a emissione",  mode: "narrowband", filters: "Hα, OIII, SII" },
+  "RfN":  { type: "Nebulosa a riflessione",mode: "broadband",  filters: "LRGB / OSC" },
+  "ISM":  { type: "Mezzo interstellare",   mode: "narrowband", filters: "Hα, OIII, SII" },
+  "PG":   { type: "Galassia compatta",     mode: "broadband",  filters: "LRGB / OSC" },
+  "2G":   { type: "Coppia di galassie",    mode: "broadband",  filters: "LRGB / OSC" },
+  "3G":   { type: "Tripletta di galassie", mode: "broadband",  filters: "LRGB / OSC" },
+  "CG":   { type: "Gruppo di galassie",    mode: "broadband",  filters: "LRGB / OSC" },
+};
+
+// Suggested exposure hours by type
+function suggestExp(typeCode, mag) {
+  const m = parseFloat(mag) || 10;
+  if (["EN","HII","SNR","SR","PN","Cl+N","EmN","ISM"].includes(typeCode)) {
+    return m < 8 ? "3–8h" : m < 11 ? "5–12h" : "8–20h";
+  }
+  if (["GX","GX?","2G","3G","CG","PG"].includes(typeCode)) {
+    return m < 9 ? "4–8h" : m < 11 ? "6–12h" : "10–20h";
+  }
+  if (["GC","OC","OCl","GCl","MWSC"].includes(typeCode)) {
+    return m < 7 ? "1–3h" : "2–5h";
+  }
+  return "3–8h";
+}
+
+// Convert RA "HH:MM:SS.ss" → decimal degrees
+function raHMStoDeg(s) {
+  if (!s) return null;
+  const p = s.trim().split(":");
+  if (p.length < 2) return null;
+  const h = parseFloat(p[0]), m = parseFloat(p[1]), sec = parseFloat(p[2] || 0);
+  return (h + m / 60 + sec / 3600) * 15;
+}
+
+// Convert Dec "+DD:MM:SS.s" → decimal degrees
+function decDMStoDeg(s) {
+  if (!s) return null;
+  const sign = s.trim().startsWith("-") ? -1 : 1;
+  const p = s.trim().replace(/^[+-]/, "").split(":");
+  if (p.length < 2) return null;
+  const d = parseFloat(p[0]), m = parseFloat(p[1]), sec = parseFloat(p[2] || 0);
+  return sign * (d + m / 60 + sec / 3600);
+}
+
+// Parse OpenNGC CSV text → array of our objects
+function parseOpenNGC(csvText) {
+  const lines = csvText.split("\n");
+  if (lines.length < 2) return [];
+  const header = lines[0].split(";").map(h => h.trim().replace(/^"|"$/g, ""));
+  const idx = (name) => header.indexOf(name);
+
+  const iName   = idx("Name");
+  const iType   = idx("Type");
+  const iRA     = idx("RA");
+  const iDec    = idx("Dec");
+  const iMaj    = idx("MajAx");    // arcmin
+  const iMag    = idx("V-Mag");
+  const iBmag   = idx("B-Mag");
+  const iCommon = idx("Common names");
+  const iM      = idx("M");        // Messier number
+  const iConst  = idx("Const");
+
+  const objects = [];
+  for (let i = 1; i < lines.length; i++) {
+    const row = lines[i].split(";");
+    if (row.length < 5) continue;
+
+    const rawName = (row[iName] || "").trim().replace(/^"|"$/g, "");
+    if (!rawName) continue;
+
+    const typeCode = (row[iType] || "").trim().replace(/^"|"$/g, "");
+    // Skip non-visual / undefined / duplicate entries
+    if (!typeCode || typeCode === "NF" || typeCode === "*" || typeCode === "D*") continue;
+
+    const ra  = raHMStoDeg((row[iRA]  || "").replace(/^"|"$/g, "").trim());
+    const dec = decDMStoDeg((row[iDec] || "").replace(/^"|"$/g, "").trim());
+    if (ra === null || dec === null) continue;
+
+    const majorAxis = parseFloat((row[iMaj] || "").replace(/^"|"$/g, "")) || 1;
+    const vMag = parseFloat((row[iMag] || row[iBmag] || "").replace(/^"|"$/g, "")) || 15;
+    const commonName = (row[iCommon] || "").replace(/^"|"$/g, "").trim();
+    const messier = (row[iM] || "").replace(/^"|"$/g, "").trim();
+    const constellation = (row[iConst] || "").replace(/^"|"$/g, "").trim();
+
+    // Build display name: prefer common name, fallback to NGC/IC id
+    const displayName = commonName || rawName;
+
+    // Messier cross-reference id
+    const mId = messier ? `M${messier}` : null;
+
+    const typeInfo = ONGC_TYPE_MAP[typeCode] || { type: typeCode, mode: "broadband", filters: "LRGB / OSC" };
+
+    objects.push({
+      id: rawName,
+      mId,
+      name: displayName,
+      catalogName: rawName,
+      ra,
+      dec,
+      type: typeInfo.type,
+      typeCode,
+      mag: vMag,
+      size: majorAxis,
+      mode: typeInfo.mode,
+      filters: typeInfo.filters,
+      expHours: suggestExp(typeCode, vMag),
+      description: [
+        commonName && commonName !== rawName ? commonName : null,
+        constellation ? `Cost. ${constellation}` : null,
+        mId ? `Messier ${messier}` : null,
+      ].filter(Boolean).join(" · ") || typeInfo.type,
+      constellation,
+    });
+  }
+  return objects;
+}
+
+// Curated fallback catalogue (used when fetch fails)
+const CATALOGUE_FALLBACK = [
+  { id: "M42",    name: "Nebulosa di Orione",    ra: 83.82,  dec: -5.39,  type: "Nebulosa a emissione",  mag: 4.0,  size: 65,  mode: "narrowband", filters: "Hα, OIII, SII", expHours: "3–6h",  description: "Icona invernale, ricca in Hα" },
+  { id: "M1",     name: "Nebulosa del Granchio",  ra: 83.63,  dec: 22.01,  type: "Resto di supernova",    mag: 8.4,  size: 7,   mode: "narrowband", filters: "Hα, OIII",       expHours: "4–8h",  description: "Filamenti delicati, ottima per narrowband" },
+  { id: "NGC7293",name: "Nebulosa Elica",         ra: 337.41, dec: -20.84, type: "Nebulosa planetaria",   mag: 7.3,  size: 28,  mode: "narrowband", filters: "Hα, OIII",       expHours: "5–10h", description: "La più grande nebulosa planetaria del cielo" },
+  { id: "M57",    name: "Nebulosa Anello",        ra: 283.4,  dec: 33.03,  type: "Nebulosa planetaria",   mag: 8.8,  size: 1.4, mode: "narrowband", filters: "Hα, OIII",       expHours: "3–5h",  description: "Gioiello estivo in Lyra" },
+  { id: "M27",    name: "Nebulosa Manubrio",      ra: 299.9,  dec: 22.72,  type: "Nebulosa planetaria",   mag: 7.4,  size: 8,   mode: "narrowband", filters: "Hα, OIII, SII", expHours: "4–8h",  description: "Grandissima planetaria, SHO spettacolare" },
+  { id: "IC1805", name: "Nebulosa Cuore",         ra: 38.2,   dec: 61.45,  type: "Nebulosa a emissione",  mag: 6.5,  size: 150, mode: "narrowband", filters: "Hα, OIII, SII", expHours: "8–15h", description: "SHO palette sorprendente" },
+  { id: "NGC2244",name: "Nebulosa Rosetta",       ra: 97.9,   dec: 4.97,   type: "Nebulosa a emissione",  mag: 6.0,  size: 80,  mode: "narrowband", filters: "Hα, OIII, SII", expHours: "6–12h", description: "Struttura circolare magnificente" },
+  { id: "NGC6992",name: "Velo Est (Cigno)",       ra: 313.8,  dec: 31.73,  type: "Resto di supernova",    mag: 7.0,  size: 60,  mode: "narrowband", filters: "Hα, OIII",       expHours: "6–12h", description: "Filamenti sottilissimi" },
+  { id: "NGC7000",name: "Nebulosa Nord America",  ra: 314.0,  dec: 44.5,   type: "Nebulosa a emissione",  mag: 4.0,  size: 120, mode: "narrowband", filters: "Hα, OIII, SII", expHours: "6–12h", description: "Estiva/autunnale, grandissima" },
+  { id: "M31",    name: "Galassia di Andromeda",  ra: 10.68,  dec: 41.27,  type: "Galassia spirale",      mag: 3.4,  size: 190, mode: "broadband",  filters: "LRGB / OSC",     expHours: "4–10h", description: "Target autunnale per eccellenza" },
+  { id: "M51",    name: "Galassia Vortice",       ra: 202.5,  dec: 47.2,   type: "Galassia spirale",      mag: 8.4,  size: 11,  mode: "broadband",  filters: "LRGB / OSC",     expHours: "6–12h", description: "Interazione con NGC5195" },
+  { id: "M81",    name: "Galassia di Bode",       ra: 148.9,  dec: 69.07,  type: "Galassia spirale",      mag: 6.9,  size: 21,  mode: "broadband",  filters: "LRGB / OSC",     expHours: "5–10h", description: "Coppia con M82" },
+  { id: "M13",    name: "Ammasso Ercole",         ra: 250.4,  dec: 36.46,  type: "Ammasso globulare",     mag: 5.8,  size: 20,  mode: "broadband",  filters: "LRGB / OSC",     expHours: "2–4h",  description: "Il più bello ammasso globulare nord" },
+  { id: "M45",    name: "Pleiadi",                ra: 56.87,  dec: 24.11,  type: "Ammasso aperto",        mag: 1.6,  size: 120, mode: "broadband",  filters: "LRGB / OSC",     expHours: "3–8h",  description: "Nebulosità blu attorno alle stelle" },
 ];
 
 // ─── Horizon profile parser ───────────────────────────────────────────────────
+
 
 function parseHorizonCSV(text) {
   // Expected: two columns, azimuth (0-359) and altitude in degrees
@@ -914,14 +1033,80 @@ export default function AstroPlanner() {
   const [filter, setFilter] = useState("all");
   const [tab, setTab] = useState("results");
 
+  // OpenNGC catalogue state
+  const [catalogue, setCatalogue] = useState(CATALOGUE_FALLBACK);
+  const [catalogueStatus, setCatalogueStatus] = useState("idle"); // idle | loading | ok | error
+  const [catalogueCount, setCatalogueCount] = useState(0);
+
+  // Search / filter / pagination for results tab
+  const [search, setSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [minMag, setMinMag] = useState("");
+  const [maxSize, setMaxSize] = useState("");
+  const [page, setPage] = useState(0);
+  const PAGE_SIZE = 50;
+
+  // Fetch OpenNGC on first load
+  useEffect(() => {
+    setCatalogueStatus("loading");
+    const ONGC_URL = "https://raw.githubusercontent.com/mattiaverga/OpenNGC/master/database/NGC.csv";
+    fetch(ONGC_URL)
+      .then(r => { if (!r.ok) throw new Error(r.status); return r.text(); })
+      .then(text => {
+        const parsed = parseOpenNGC(text);
+        if (parsed.length > 100) {
+          setCatalogue(parsed);
+          setCatalogueCount(parsed.length);
+          setCatalogueStatus("ok");
+        } else {
+          throw new Error("too few objects");
+        }
+      })
+      .catch(() => {
+        setCatalogueStatus("error");
+        setCatalogueCount(CATALOGUE_FALLBACK.length);
+      });
+  }, []);
+
   const date = useMemo(() => new Date(settings.year, settings.month, 15), [settings.year, settings.month]);
 
-  const results = useMemo(() => {
-    return CATALOGUE
+  // Unique type labels for filter dropdown
+  const typeLabels = useMemo(() => {
+    const s = new Set(catalogue.map(o => o.type));
+    return ["all", ...Array.from(s).sort()];
+  }, [catalogue]);
+
+  // Filtered catalogue (before scoring — cheap pass)
+  const filteredCatalogue = useMemo(() => {
+    const q = search.toLowerCase().trim();
+    const maxMag = minMag !== "" ? parseFloat(minMag) : 99;
+    const minSize = maxSize !== "" ? 0 : 0; // unused placeholder
+    const maxSizePx = maxSize !== "" ? parseFloat(maxSize) : 99999;
+    return catalogue.filter(o => {
+      if (filter !== "all" && o.mode !== filter) return false;
+      if (typeFilter !== "all" && o.type !== typeFilter) return false;
+      if (o.mag > maxMag) return false;
+      if (maxSize !== "" && o.size > maxSizePx) return false;
+      if (q) {
+        const hay = `${o.id} ${o.name} ${o.catalogName || ""} ${o.mId || ""} ${o.constellation || ""} ${o.type}`.toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [catalogue, filter, typeFilter, search, minMag, maxSize]);
+
+  // Score only the visible page + a bit ahead for perf (score is expensive)
+  const scoredPage = useMemo(() => {
+    // First sort by magnitude (brightest first) so scoring the first page is useful
+    const sorted = [...filteredCatalogue].sort((a, b) => a.mag - b.mag);
+    const start = page * PAGE_SIZE;
+    const slice = sorted.slice(start, start + PAGE_SIZE);
+    return slice
       .map(obj => scoreObject(obj, settings.lat, settings.lon, date, horizonProfile))
-      .filter(o => filter === "all" || o.mode === filter)
       .sort((a, b) => b.score - a.score);
-  }, [settings.lat, settings.lon, date, horizonProfile, filter]);
+  }, [filteredCatalogue, page, settings.lat, settings.lon, date, horizonProfile]);
+
+  const totalPages = Math.ceil(filteredCatalogue.length / PAGE_SIZE);
 
   const handleHorizonFile = useCallback((e) => {
     const file = e.target.files[0];
@@ -1037,66 +1222,115 @@ export default function AstroPlanner() {
           flexDirection: "column",
           boxSizing: "border-box",
         }}>
-          {/* Month / Year */}
-          <div style={{ marginBottom: 20 }}>
-            <div style={{ fontSize: 10, color: "#475569", letterSpacing: 1, marginBottom: 8 }}>PERIODO</div>
-            <select value={settings.month} onChange={e => s("month", +e.target.value)} style={fieldStyle}>
-              {MONTHS.map((m, i) => <option key={i} value={i}>{m}</option>)}
-            </select>
-            <input type="number" value={settings.year} onChange={e => s("year", +e.target.value)}
-              style={{ ...fieldStyle, marginTop: 6 }} min={2020} max={2040} />
-          </div>
+          {/* ── Sidebar content: contextual per tab ── */}
 
-          {/* Coordinates */}
-          <div style={{ marginBottom: 20 }}>
-            <div style={{ fontSize: 10, color: "#475569", letterSpacing: 1, marginBottom: 8 }}>COORDINATE</div>
-            <label style={{ fontSize: 11, color: "#64748b" }}>Latitudine °N</label>
-            <input type="number" step="0.01" value={settings.lat} onChange={e => s("lat", +e.target.value)} style={fieldStyle} />
-            <label style={{ fontSize: 11, color: "#64748b", marginTop: 6, display: "block" }}>Longitudine °E</label>
-            <input type="number" step="0.01" value={settings.lon} onChange={e => s("lon", +e.target.value)} style={fieldStyle} />
-          </div>
-
-          {/* Filter */}
-          <div style={{ marginBottom: 20 }}>
-            <div style={{ fontSize: 10, color: "#475569", letterSpacing: 1, marginBottom: 8 }}>FILTRO TECNICA</div>
-            {["all", "narrowband", "broadband"].map(f => (
-              <button key={f} onClick={() => setFilter(f)} style={{
-                display: "block",
-                width: "100%",
-                background: filter === f ? "#1e3a5f" : "transparent",
-                border: `1px solid ${filter === f ? "#3b82f6" : "#1e3a5f"}`,
-                borderRadius: 5,
-                color: filter === f ? "#93c5fd" : "#475569",
-                padding: "5px 10px",
-                cursor: "pointer",
-                fontSize: 11,
-                textAlign: "left",
-                marginBottom: 4,
-              }}>
-                {f === "all" ? "Tutti" : MODES[f].icon + " " + MODES[f].label}
-              </button>
-            ))}
-          </div>
-
-          {/* Quick stats */}
-          <div style={{ background: "#0a1628", borderRadius: 8, padding: 12, border: "1px solid #1e3a5f" }}>
-            <div style={{ fontSize: 10, color: "#475569", letterSpacing: 1, marginBottom: 8 }}>RIEPILOGO</div>
-            <div style={{ fontSize: 12, color: "#64748b" }}>
-              <div>Oggetti: <span style={{ color: "#93c5fd" }}>{results.length}</span></div>
-              <div>Ottimi (≥75): <span style={{ color: "#4ade80" }}>{results.filter(r => r.score >= 75).length}</span></div>
-              <div>Buoni (45–74): <span style={{ color: "#facc15" }}>{results.filter(r => r.score >= 45 && r.score < 75).length}</span></div>
-              <div>Scarsi (&lt;45): <span style={{ color: "#f87171" }}>{results.filter(r => r.score < 45).length}</span></div>
-              {horizonProfile && <div style={{ marginTop: 8, color: "#e76f51", fontSize: 10 }}>✓ Orizzonte custom attivo</div>}
-              {fov && <div style={{ marginTop: 4, color: "#a78bfa", fontSize: 10 }}>Scala: {fov}″/px</div>}
-              {fovData && <div style={{ color: "#4ade80", fontSize: 10 }}>FOV: {fovData.fovW.toFixed(1)}′×{fovData.fovH.toFixed(1)}′</div>}
+          {tab === "results" && (<>
+            {/* Month / Year */}
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ fontSize: 10, color: "#475569", letterSpacing: 1, marginBottom: 8 }}>PERIODO</div>
+              <select value={settings.month} onChange={e => s("month", +e.target.value)} style={fieldStyle}>
+                {MONTHS.map((m, i) => <option key={i} value={i}>{m}</option>)}
+              </select>
+              <input type="number" value={settings.year} onChange={e => s("year", +e.target.value)}
+                style={{ ...fieldStyle, marginTop: 6 }} min={2020} max={2040} />
             </div>
-          </div>
 
-          {/* Copyright */}
-          <div style={{ marginTop: 16, borderTop: "1px solid #1e293b", paddingTop: 12, lineHeight: 1.8 }}>
+            {/* Coordinates */}
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ fontSize: 10, color: "#475569", letterSpacing: 1, marginBottom: 8 }}>COORDINATE</div>
+              <label style={{ fontSize: 11, color: "#64748b" }}>Latitudine °N</label>
+              <input type="number" step="0.01" value={settings.lat} onChange={e => s("lat", +e.target.value)} style={fieldStyle} />
+              <label style={{ fontSize: 11, color: "#64748b", marginTop: 6, display: "block" }}>Longitudine °E</label>
+              <input type="number" step="0.01" value={settings.lon} onChange={e => s("lon", +e.target.value)} style={fieldStyle} />
+            </div>
+
+            {/* Filter */}
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ fontSize: 10, color: "#475569", letterSpacing: 1, marginBottom: 8 }}>FILTRO TECNICA</div>
+              {["all", "narrowband", "broadband"].map(f => (
+                <button key={f} onClick={() => { setFilter(f); setPage(0); }} style={{
+                  display: "block", width: "100%",
+                  background: filter === f ? "#1e3a5f" : "transparent",
+                  border: `1px solid ${filter === f ? "#3b82f6" : "#1e3a5f"}`,
+                  borderRadius: 5,
+                  color: filter === f ? "#93c5fd" : "#475569",
+                  padding: "5px 10px", cursor: "pointer", fontSize: 11, textAlign: "left", marginBottom: 4,
+                }}>
+                  {f === "all" ? "Tutti" : MODES[f].icon + " " + MODES[f].label}
+                </button>
+              ))}
+            </div>
+
+            {/* Quick stats */}
+            <div style={{ background: "#0a1628", borderRadius: 8, padding: 12, border: "1px solid #1e3a5f" }}>
+              <div style={{ fontSize: 10, color: "#475569", letterSpacing: 1, marginBottom: 8 }}>RIEPILOGO</div>
+              <div style={{ fontSize: 12, color: "#64748b" }}>
+                <div>Catalogo:
+                  <span style={{ marginLeft: 6, color: catalogueStatus === "ok" ? "#4ade80" : catalogueStatus === "loading" ? "#facc15" : "#f87171" }}>
+                    {catalogueStatus === "loading" ? "⏳ caricamento…" : catalogueStatus === "ok" ? `✓ ${catalogueCount.toLocaleString()}` : `⚠ fallback`}
+                  </span>
+                </div>
+                <div style={{ marginTop: 4 }}>Filtrati: <span style={{ color: "#93c5fd" }}>{filteredCatalogue.length.toLocaleString()}</span></div>
+                <div>Ottimi (≥75): <span style={{ color: "#4ade80" }}>{scoredPage.filter(r => r.score >= 75).length}</span></div>
+                <div>Buoni (45–74): <span style={{ color: "#facc15" }}>{scoredPage.filter(r => r.score >= 45 && r.score < 75).length}</span></div>
+                {horizonProfile && <div style={{ marginTop: 6, color: "#e76f51", fontSize: 10 }}>✓ Orizzonte custom attivo</div>}
+                {fov && <div style={{ marginTop: 4, color: "#a78bfa", fontSize: 10 }}>Scala: {fov}″/px</div>}
+                {fovData && <div style={{ color: "#4ade80", fontSize: 10 }}>FOV: {fovData.fovW.toFixed(1)}′×{fovData.fovH.toFixed(1)}′</div>}
+              </div>
+            </div>
+          </>)}
+
+          {tab === "setup" && (<>
+            <div style={{ fontSize: 10, color: "#475569", letterSpacing: 1, marginBottom: 16 }}>SETUP CORRENTE</div>
+
+            <div style={{ fontSize: 11, color: "#64748b", lineHeight: 2 }}>
+              <div>Camera:<br /><span style={{ color: "#e2e8f0", fontSize: 12 }}>{settings.camera || "—"}</span></div>
+              <div style={{ marginTop: 10 }}>Pixel size:<br /><span style={{ color: "#a78bfa", fontSize: 12 }}>{settings.pixelSize ? `${settings.pixelSize} µm` : "—"}</span></div>
+              <div style={{ marginTop: 10 }}>Sensore:<br /><span style={{ color: settings.colorCamera ? "#48cae4" : "#c084fc", fontSize: 12 }}>{settings.colorCamera ? "Colori (OSC)" : "Mono"}</span></div>
+              <div style={{ marginTop: 10 }}>Risoluzione:<br /><span style={{ color: "#64748b", fontSize: 12 }}>{settings.sensorW && settings.sensorH ? `${settings.sensorW}×${settings.sensorH}` : "—"}</span></div>
+            </div>
+
+            <div style={{ marginTop: 20, borderTop: "1px solid #1e293b", paddingTop: 16, fontSize: 11, color: "#64748b", lineHeight: 2 }}>
+              <div>Focale:<br /><span style={{ color: "#93c5fd", fontSize: 12 }}>{settings.focal ? `${settings.focal} mm` : "—"}</span></div>
+              <div style={{ marginTop: 10 }}>Apertura:<br /><span style={{ color: "#93c5fd", fontSize: 12 }}>{settings.aperture ? `f/${(settings.focal/settings.aperture).toFixed(1)}` : "—"}</span></div>
+              {fov && <div style={{ marginTop: 10 }}>Scala:<br /><span style={{ color: "#a78bfa", fontSize: 12 }}>{fov}″/px</span></div>}
+              {fovData && <div style={{ marginTop: 10 }}>FOV:<br /><span style={{ color: "#4ade80", fontSize: 12 }}>{fovData.fovW.toFixed(1)}′×{fovData.fovH.toFixed(1)}′</span></div>}
+            </div>
+          </>)}
+
+          {tab === "horizon" && (<>
+            <div style={{ fontSize: 10, color: "#475569", letterSpacing: 1, marginBottom: 16 }}>ORIZZONTE ATTIVO</div>
+
+            {horizonProfile ? (<>
+              <div style={{ fontSize: 11, color: "#4ade80", marginBottom: 10 }}>✓ Profilo caricato</div>
+              <div style={{ fontSize: 11, color: "#64748b" }}>File: <span style={{ color: "#e2e8f0" }}>{horizonName}</span></div>
+              <div style={{ marginTop: 12, fontSize: 11, color: "#64748b" }}>
+                Punti: <span style={{ color: "#93c5fd" }}>{horizonProfile.filter(v => v > 0).length} az.</span><br />
+                Alt. media: <span style={{ color: "#e76f51" }}>{(horizonProfile.reduce((a, b) => a + b, 0) / 360).toFixed(1)}°</span><br />
+                Alt. max: <span style={{ color: "#f87171" }}>{Math.max(...horizonProfile).toFixed(1)}°</span>
+              </div>
+              <button onClick={() => { setHorizonProfile(null); setHorizonName(""); }}
+                style={{ marginTop: 16, background: "#1a0a06", border: "1px solid #e76f5155", borderRadius: 6, color: "#e76f51", fontSize: 11, padding: "6px 10px", cursor: "pointer", width: "100%" }}>
+                ✕ Rimuovi profilo
+              </button>
+            </>) : (
+              <div style={{ fontSize: 11, color: "#334155", lineHeight: 1.8 }}>
+                Nessun profilo caricato.<br />
+                <span style={{ color: "#475569" }}>L'orizzonte è considerato piatto a 0°.</span>
+              </div>
+            )}
+
+            <div style={{ marginTop: 24, borderTop: "1px solid #1e293b", paddingTop: 16, fontSize: 10, color: "#334155", lineHeight: 1.9 }}>
+              <div style={{ color: "#475569", marginBottom: 6 }}>FORMATO CSV ATTESO</div>
+              <code style={{ color: "#64748b", fontSize: 9 }}>azimut;altezza<br />0;5<br />45;12<br />90;8<br />…</code>
+            </div>
+          </>)}
+
+          {/* Copyright – always visible at bottom */}
+          <div style={{ marginTop: "auto", paddingTop: 16, borderTop: "1px solid #1e293b", lineHeight: 1.8 }}>
             <div style={{ fontSize: 9, color: "#334155", letterSpacing: 0.5 }}>© Marco Manenti</div>
             <div style={{ fontSize: 10, color: "#e76f51", fontWeight: "bold", letterSpacing: 1.5 }}>Astro Myrddin</div>
-            <div style={{ fontSize: 9, color: "#1e3a5f", marginTop: 4, letterSpacing: 1 }}>v0.1</div>
+            <div style={{ fontSize: 9, color: "#1e3a5f", letterSpacing: 1 }}>v0.1</div>
           </div>
         </div>
 
@@ -1106,31 +1340,61 @@ export default function AstroPlanner() {
           {/* ── Tab: Results ── */}
           {tab === "results" && (
             <div>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, flexWrap: "wrap", gap: 8 }}>
-                <div style={{ fontSize: 13, color: "#475569" }}>
-                  Visibilità calcolata per <span style={{ color: "#93c5fd" }}>{MONTHS[settings.month]} {settings.year}</span> —
-                  lat {settings.lat}° lon {settings.lon}°
+              {/* Search + filter bar */}
+              <div style={{ background: "#080f1e", border: "1px solid #1e3a5f", borderRadius: 10, padding: 12, marginBottom: 14, display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
+                <input
+                  placeholder="🔍  Cerca per nome, NGC, IC, Messier, costellazione…"
+                  value={search}
+                  onChange={e => { setSearch(e.target.value); setPage(0); }}
+                  style={{ ...fieldStyle, flex: "2 1 220px", background: "#060c18" }}
+                />
+                <select value={typeFilter} onChange={e => { setTypeFilter(e.target.value); setPage(0); }}
+                  style={{ ...fieldStyle, flex: "1 1 160px", background: "#060c18" }}>
+                  <option value="all">Tutti i tipi</option>
+                  {typeLabels.filter(t => t !== "all").map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
+                <input type="number" placeholder="Mag max (es. 12)" value={minMag}
+                  onChange={e => { setMinMag(e.target.value); setPage(0); }}
+                  style={{ ...fieldStyle, flex: "0 1 140px", background: "#060c18" }}
+                />
+                <input type="number" placeholder="Dim. max ′ (es. 30)" value={maxSize}
+                  onChange={e => { setMaxSize(e.target.value); setPage(0); }}
+                  style={{ ...fieldStyle, flex: "0 1 140px", background: "#060c18" }}
+                />
+                {(search || typeFilter !== "all" || minMag || maxSize) && (
+                  <button onClick={() => { setSearch(""); setTypeFilter("all"); setMinMag(""); setMaxSize(""); setPage(0); }}
+                    style={{ background: "#1a0f06", border: "1px solid #e76f5155", borderRadius: 6, color: "#e76f51", fontSize: 11, padding: "6px 12px", cursor: "pointer" }}>
+                    ✕ Reset
+                  </button>
+                )}
+              </div>
+
+              {/* Status bar */}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
+                <div style={{ fontSize: 12, color: "#475569" }}>
+                  {catalogueStatus === "loading"
+                    ? <span style={{ color: "#facc15" }}>⏳ Caricamento OpenNGC…</span>
+                    : catalogueStatus === "ok"
+                      ? <span><span style={{ color: "#4ade80" }}>✓ OpenNGC</span> · <span style={{ color: "#93c5fd" }}>{filteredCatalogue.length.toLocaleString()}</span> oggetti filtrati · pagina {page + 1}/{totalPages || 1}</span>
+                      : <span style={{ color: "#f87171" }}>⚠ Catalogo fallback ({catalogueCount} oggetti) — verifica connessione</span>
+                  }
+                  <span style={{ marginLeft: 12, color: "#334155" }}>{MONTHS[settings.month]} {settings.year} · {settings.lat}°N {settings.lon}°E</span>
                 </div>
-                <div style={{ display: "flex", gap: 6 }}>
-                  {[
-                    { label: "▼ Apri tutte", action: () => setExpanded(Object.fromEntries(results.map(o => [o.id, true]))) },
-                    { label: "▲ Chiudi tutte", action: () => setExpanded({}) },
-                  ].map(btn => (
-                    <button key={btn.label} onClick={btn.action} style={{
-                      background: "#0a1628",
-                      border: "1px solid #1e3a5f",
-                      borderRadius: 6,
-                      color: "#64748b",
-                      fontSize: 11,
-                      padding: "5px 12px",
-                      cursor: "pointer",
-                      letterSpacing: 0.5,
-                    }}>{btn.label}</button>
-                  ))}
+                <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                  <button onClick={() => setExpanded(Object.fromEntries(scoredPage.map(o => [o.id, true])))}
+                    style={{ background: "#0a1628", border: "1px solid #1e3a5f", borderRadius: 6, color: "#64748b", fontSize: 11, padding: "5px 12px", cursor: "pointer" }}>▼ Apri tutte</button>
+                  <button onClick={() => setExpanded({})}
+                    style={{ background: "#0a1628", border: "1px solid #1e3a5f", borderRadius: 6, color: "#64748b", fontSize: 11, padding: "5px 12px", cursor: "pointer" }}>▲ Chiudi tutte</button>
                 </div>
               </div>
+
               <div style={{ display: "grid", gap: 10 }}>
-                {results.map(obj => {
+                {scoredPage.length === 0 && (
+                  <div style={{ textAlign: "center", padding: 40, color: "#334155", fontSize: 14 }}>
+                    {catalogueStatus === "loading" ? "⏳ Caricamento catalogo in corso…" : "Nessun oggetto trovato con questi filtri."}
+                  </div>
+                )}
+                {scoredPage.map(obj => {
                   // Aladin Lite URL: opens sky viewer centred on object with correct FOV
                   const fovDeg = fovData
                     ? Math.max(fovData.fovW, fovData.fovH) / 60 * 1.5
@@ -1249,6 +1513,32 @@ export default function AstroPlanner() {
                   );
                 })}
               </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div style={{ display: "flex", gap: 6, justifyContent: "center", alignItems: "center", marginTop: 20, flexWrap: "wrap" }}>
+                  <button onClick={() => { setPage(0); setExpanded({}); }} disabled={page === 0}
+                    style={{ background: "#080f1e", border: "1px solid #1e3a5f", borderRadius: 6, color: page === 0 ? "#1e3a5f" : "#64748b", fontSize: 11, padding: "5px 10px", cursor: page === 0 ? "default" : "pointer" }}>◀◀</button>
+                  <button onClick={() => { setPage(p => Math.max(0, p - 1)); setExpanded({}); }} disabled={page === 0}
+                    style={{ background: "#080f1e", border: "1px solid #1e3a5f", borderRadius: 6, color: page === 0 ? "#1e3a5f" : "#64748b", fontSize: 11, padding: "5px 10px", cursor: page === 0 ? "default" : "pointer" }}>◀</button>
+                  {Array.from({ length: Math.min(9, totalPages) }, (_, i) => {
+                    let p = totalPages <= 9 ? i : page < 5 ? i : page > totalPages - 5 ? totalPages - 9 + i : page - 4 + i;
+                    return (
+                      <button key={p} onClick={() => { setPage(p); setExpanded({}); }}
+                        style={{ background: p === page ? "#1e3a5f" : "#080f1e", border: `1px solid ${p === page ? "#3b82f6" : "#1e3a5f"}`, borderRadius: 6, color: p === page ? "#93c5fd" : "#475569", fontSize: 11, padding: "5px 10px", cursor: "pointer", minWidth: 32 }}>
+                        {p + 1}
+                      </button>
+                    );
+                  })}
+                  <button onClick={() => { setPage(p => Math.min(totalPages - 1, p + 1)); setExpanded({}); }} disabled={page >= totalPages - 1}
+                    style={{ background: "#080f1e", border: "1px solid #1e3a5f", borderRadius: 6, color: page >= totalPages - 1 ? "#1e3a5f" : "#64748b", fontSize: 11, padding: "5px 10px", cursor: page >= totalPages - 1 ? "default" : "pointer" }}>▶</button>
+                  <button onClick={() => { setPage(totalPages - 1); setExpanded({}); }} disabled={page >= totalPages - 1}
+                    style={{ background: "#080f1e", border: "1px solid #1e3a5f", borderRadius: 6, color: page >= totalPages - 1 ? "#1e3a5f" : "#64748b", fontSize: 11, padding: "5px 10px", cursor: page >= totalPages - 1 ? "default" : "pointer" }}>▶▶</button>
+                  <span style={{ fontSize: 11, color: "#334155", marginLeft: 8 }}>
+                    {filteredCatalogue.length.toLocaleString()} oggetti · {PAGE_SIZE}/pag
+                  </span>
+                </div>
+              )}
             </div>
           )}
 
