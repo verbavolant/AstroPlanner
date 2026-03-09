@@ -756,15 +756,15 @@ const CAMERA_BRANDS = ["Tutti", ...Array.from(new Set(CAMERA_DB.map(c => c.brand
 
 // ─── Setup Tab Component ──────────────────────────────────────────────────────
 
-function SetupTab({ settings, s, fieldStyle, fov, fovData }) {
+function SetupTab({ settings, s, fieldStyle, fov, fovData, t }) {
   const [camSearch, setCamSearch] = useState("");
-  const [camBrand, setCamBrand] = useState("Tutti");
+  const [camBrand, setCamBrand] = useState("all");
   const [camType, setCamType] = useState("tutti");
 
   const filteredCams = useMemo(() => CAMERA_DB.filter(c => {
     const q = camSearch.toLowerCase();
     const matchSearch = !q || c.model.toLowerCase().includes(q) || c.brand.toLowerCase().includes(q) || c.sensor.toLowerCase().includes(q);
-    const matchBrand = camBrand === "Tutti" || c.brand === camBrand;
+    const matchBrand = camBrand === "all" || c.brand === camBrand;
     const matchType = camType === "tutti" || (camType === "color" ? c.color : !c.color);
     return matchSearch && matchBrand && matchType;
   }), [camSearch, camBrand, camType]);
@@ -779,39 +779,41 @@ function SetupTab({ settings, s, fieldStyle, fov, fovData }) {
 
   return (
     <div style={{ maxWidth: 860 }}>
-      <div style={{ fontSize: 14, color: "#93c5fd", marginBottom: 20, letterSpacing: 1 }}>CONFIGURAZIONE SETUP</div>
+      <div style={{ fontSize: 14, color: "#93c5fd", marginBottom: 20, letterSpacing: 1 }}>{t("setupTitle")}</div>
 
       {/* Camera picker */}
       <div style={{ background: "#080f1e", border: "1px solid #1e3a5f", borderRadius: 10, padding: 16, marginBottom: 24 }}>
         <div style={{ fontSize: 11, color: "#475569", letterSpacing: 1, marginBottom: 12 }}>
-          SELEZIONA CAMERA DAL CATALOGO
-          <span style={{ color: "#1e3a5f", marginLeft: 8 }}>({CAMERA_DB.length} modelli)</span>
+          {t("cameraCatalogTitle")}
+          <span style={{ color: "#1e3a5f", marginLeft: 8 }}>({CAMERA_DB.length} {t("colModel").toLowerCase()})</span>
         </div>
 
         {/* Filter row */}
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
-          <input placeholder="Cerca modello…" value={camSearch} onChange={e => setCamSearch(e.target.value)}
+          <input placeholder={t("searchCamera")} value={camSearch} onChange={e => setCamSearch(e.target.value)}
             style={{ ...fieldStyle, flex: "1 1 140px", minWidth: 120 }} />
           <select value={camBrand} onChange={e => setCamBrand(e.target.value)} style={{ ...fieldStyle, flex: "0 0 130px" }}>
-            {CAMERA_BRANDS.map(b => <option key={b}>{b}</option>)}
+            <option value="all">{t("allBrands")}</option>
+            {CAMERA_BRANDS.filter(b => b !== "Tutti").map(b => <option key={b}>{b}</option>)}
           </select>
           <select value={camType} onChange={e => setCamType(e.target.value)} style={{ ...fieldStyle, flex: "0 0 150px" }}>
-            <option value="tutti">Colori + Mono</option>
-            <option value="color">Solo Colori (OSC)</option>
-            <option value="mono">Solo Mono</option>
+            <option value="tutti">{t("colorAndMono")}</option>
+            <option value="color">{t("colorOnly")}</option>
+            <option value="mono">{t("monoOnly")}</option>
           </select>
         </div>
 
         {/* Column headers */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 60px 55px 110px 45px 46px", gap: 10,
           padding: "3px 10px", fontSize: 9, color: "#334155", letterSpacing: 1 }}>
-          <div>MODELLO</div><div>SENSORE</div><div>PIXEL</div><div>RISOLUZIONE</div><div>MP</div><div>TIPO</div>
+          <div>{t("colModel")}</div><div>{t("colSensor")}</div><div>{t("colPixel")}</div>
+          <div>{t("colResolution")}</div><div>{t("colMp")}</div><div>{t("colType")}</div>
         </div>
 
         {/* Camera list */}
         <div style={{ maxHeight: 280, overflowY: "auto", display: "grid", gap: 3 }}>
           {filteredCams.length === 0 && (
-            <div style={{ fontSize: 12, color: "#334155", padding: 16, textAlign: "center" }}>Nessuna camera trovata</div>
+            <div style={{ fontSize: 12, color: "#334155", padding: 16, textAlign: "center" }}>{t("noCameraFound")}</div>
           )}
           {filteredCams.map((cam, i) => {
             const isSelected = settings.camera === `${cam.brand} ${cam.model}`;
@@ -841,65 +843,65 @@ function SetupTab({ settings, s, fieldStyle, fov, fovData }) {
           })}
         </div>
         <div style={{ fontSize: 9, color: "#1e3a5f", marginTop: 6 }}>
-          {filteredCams.length} risultati · clicca per compilare i parametri automaticamente
+          {t("cameraClickHint", filteredCams.length)}
         </div>
       </div>
 
       {/* Manual fields */}
-      <div style={{ fontSize: 11, color: "#475569", letterSpacing: 1, marginBottom: 12 }}>PARAMETRI OTTICI / PERSONALIZZATI</div>
+      <div style={{ fontSize: 11, color: "#475569", letterSpacing: 1, marginBottom: 12 }}>{t("opticsTitle")}</div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
         {[
-          { label: "Focale telescopio (mm)", key: "focal", type: "number", step: 1 },
-          { label: "Apertura telescopio (mm)", key: "aperture", type: "number", step: 1 },
-          { label: "Nome camera", key: "camera", type: "text" },
-          { label: "Dimensione pixel (µm)", key: "pixelSize", type: "number", step: 0.01 },
-          { label: "Sensore larghezza (pixel)", key: "sensorW", type: "number", step: 1 },
-          { label: "Sensore altezza (pixel)", key: "sensorH", type: "number", step: 1 },
+          { labelKey: "focalLabel", key: "focal", type: "number", step: 1 },
+          { labelKey: "apertureLabel", key: "aperture", type: "number", step: 1 },
+          { labelKey: "cameraNameLabel", key: "camera", type: "text" },
+          { labelKey: "pixelSizeLabel", key: "pixelSize", type: "number", step: 0.01 },
+          { labelKey: "sensorWLabel", key: "sensorW", type: "number", step: 1 },
+          { labelKey: "sensorHLabel", key: "sensorH", type: "number", step: 1 },
         ].map(f => (
           <div key={f.key}>
-            <label style={{ fontSize: 11, color: "#64748b", display: "block", marginBottom: 4 }}>{f.label}</label>
+            <label style={{ fontSize: 11, color: "#64748b", display: "block", marginBottom: 4 }}>{t(f.labelKey)}</label>
             <input type={f.type} step={f.step} value={settings[f.key]}
               onChange={e => s(f.key, f.type === "number" ? +e.target.value : e.target.value)}
               style={fieldStyle} />
           </div>
         ))}
         <div>
-          <label style={{ fontSize: 11, color: "#64748b", display: "block", marginBottom: 4 }}>Tipo sensore</label>
+          <label style={{ fontSize: 11, color: "#64748b", display: "block", marginBottom: 4 }}>{t("sensorTypeLabel")}</label>
           <select value={settings.colorCamera ? "color" : "mono"} onChange={e => s("colorCamera", e.target.value === "color")} style={fieldStyle}>
-            <option value="color">Colori (OSC/One-Shot)</option>
-            <option value="mono">Monocromatica (Mono)</option>
+            <option value="color">{t("colorSensor")}</option>
+            <option value="mono">{t("monoSensor")}</option>
           </select>
         </div>
       </div>
 
       {/* Computed info */}
       <div style={{ marginTop: 24, background: "#0a1628", borderRadius: 10, padding: 16, border: "1px solid #1e3a5f" }}>
-        <div style={{ fontSize: 12, color: "#475569", marginBottom: 12, letterSpacing: 1 }}>PARAMETRI CALCOLATI</div>
+        <div style={{ fontSize: 12, color: "#475569", marginBottom: 12, letterSpacing: 1 }}>{t("computedTitle")}</div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, fontSize: 12 }}>
-          <div style={{ color: "#64748b" }}>Rapporto focale (f/):
+          <div style={{ color: "#64748b" }}>{t("focalRatio")}:
             <span style={{ color: "#93c5fd", marginLeft: 8 }}>f/{settings.aperture ? (settings.focal / settings.aperture).toFixed(1) : "—"}</span>
           </div>
-          <div style={{ color: "#64748b" }}>Scala immagine:
+          <div style={{ color: "#64748b" }}>{t("imageScale")}:
             <span style={{ color: "#a78bfa", marginLeft: 8 }}>{fov ? `${fov}″/px` : "—"}</span>
           </div>
-          <div style={{ color: "#64748b" }}>Campo inquadrato (W):
+          <div style={{ color: "#64748b" }}>{t("fovW")}:
             <span style={{ color: "#4ade80", marginLeft: 8 }}>{fovData ? `${fovData.fovW.toFixed(1)}′ (${(fovData.fovW/60).toFixed(2)}°)` : "—"}</span>
           </div>
-          <div style={{ color: "#64748b" }}>Campo inquadrato (H):
+          <div style={{ color: "#64748b" }}>{t("fovH")}:
             <span style={{ color: "#4ade80", marginLeft: 8 }}>{fovData ? `${fovData.fovH.toFixed(1)}′ (${(fovData.fovH/60).toFixed(2)}°)` : "—"}</span>
           </div>
-          <div style={{ color: "#64748b" }}>Sensore:
+          <div style={{ color: "#64748b" }}>{t("sensor")}:
             <span style={{ color: settings.colorCamera ? "#48cae4" : "#c084fc", marginLeft: 8 }}>
-              {settings.colorCamera ? "Colori (OSC)" : "Mono"}
+              {settings.colorCamera ? t("colorSensor") : t("monoSensor")}
             </span>
           </div>
-          <div style={{ color: "#64748b" }}>Camera:
+          <div style={{ color: "#64748b" }}>{t("camera")}:
             <span style={{ color: "#e2e8f0", marginLeft: 8 }}>{settings.camera}</span>
           </div>
         </div>
         {!settings.colorCamera && (
           <div style={{ marginTop: 12, fontSize: 11, color: "#e76f51", background: "#1a0f06", padding: 10, borderRadius: 6 }}>
-            ⚠ Camera mono: la colonna "Filtri" indica i filtri necessari per ciascun oggetto. Pianifica le sessioni per filtro.
+            {t("monoWarning")}
           </div>
         )}
       </div>
@@ -1068,7 +1070,7 @@ function ScoreBadge({ score }) {
   );
 }
 
-function HorizonPreview({ profile }) {
+function HorizonPreview({ profile, t }) {
   if (!profile) return null;
   const w = 280, h = 80;
   const pts = profile.map((alt, az) => {
@@ -1076,9 +1078,10 @@ function HorizonPreview({ profile }) {
     const y = h - (alt / 30) * h;
     return `${x},${Math.max(0, y)}`;
   }).join(" ");
+  const label = t ? t("horizonPreviewLabel") : "Profilo orizzonte (N→E→S→W→N)";
   return (
     <div style={{ marginTop: 8 }}>
-      <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4 }}>Profilo orizzonte (N→E→S→W→N)</div>
+      <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4 }}>{label}</div>
       <svg width={w} height={h} style={{ background: "#0f172a", borderRadius: 6, display: "block" }}>
         <polyline points={pts} fill="none" stroke="#e76f51" strokeWidth={1.5} />
         {[0, 10, 20, 30].map(alt => (
@@ -1093,12 +1096,244 @@ function HorizonPreview({ profile }) {
   );
 }
 
-// ─── Main App ─────────────────────────────────────────────────────────────────
+// ─── i18n ─────────────────────────────────────────────────────────────────────
 
-const MONTHS = ["Gennaio","Febbraio","Marzo","Aprile","Maggio","Giugno","Luglio","Agosto","Settembre","Ottobre","Novembre","Dicembre"];
+const TRANSLATIONS = {
+  it: {
+    // Header
+    appSubtitle: "PIANIFICATORE ASTROFOTOGRAFICO MENSILE",
+    tabObjects: "Oggetti",
+    tabSetup: "Setup",
+    tabHorizon: "Orizzonte",
+    // Sidebar – objects
+    period: "PERIODO",
+    coordinates: "COORDINATE",
+    latLabel: "Latitudine °N",
+    lonLabel: "Longitudine °E",
+    filterTech: "FILTRO TECNICA",
+    filterAll: "Tutti",
+    filterNarrow: "Banda Stretta",
+    filterBroad: "Banda Larga",
+    summary: "RIEPILOGO",
+    catalogueLoading: "⏳ caricamento…",
+    catalogueOk: (n) => `✓ ${n.toLocaleString()} oggetti`,
+    catalogueFallback: (n) => `⚠ fallback (${n})`,
+    filtered: "Filtrati",
+    excellent: "Ottimi (≥75)",
+    good: "Buoni (45–74)",
+    horizonActive: "✓ Orizzonte custom attivo",
+    scale: "Scala",
+    fovLabel: "FOV",
+    // Sidebar – setup
+    currentSetup: "SETUP CORRENTE",
+    camera: "Camera",
+    pixelSize: "Pixel size",
+    sensor: "Sensore",
+    resolution: "Risoluzione",
+    focal: "Focale",
+    aperture: "Apertura",
+    // Sidebar – horizon
+    horizonActiveTitle: "ORIZZONTE ATTIVO",
+    profileLoaded: "✓ Profilo caricato",
+    fileLabel: "File",
+    points: "Punti",
+    avgAlt: "Alt. media",
+    maxAlt: "Alt. max",
+    removeProfile: "✕ Rimuovi profilo",
+    noProfile: "Nessun profilo caricato.",
+    flatHorizon: "L'orizzonte è considerato piatto a 0°.",
+    csvFormat: "FORMATO CSV ATTESO",
+    // Results tab
+    searchPlaceholder: "🔍  Cerca per nome, NGC, IC, Messier, costellazione…",
+    allTypes: "Tutti i tipi",
+    magMax: "Mag max (es. 12)",
+    sizeMax: "Dim. max ′ (es. 30)",
+    reset: "✕ Reset",
+    openNGCOk: (n, p, tot) => `✓ OpenNGC+ext · ${n.toLocaleString()} oggetti filtrati · pagina ${p}/${tot}`,
+    openNGCLoading: "⏳ Caricamento catalogo…",
+    openNGCError: (n) => `⚠ Catalogo fallback (${n} oggetti) — verifica connessione`,
+    expandAll: "▼ Apri tutte",
+    collapseAll: "▲ Chiudi tutte",
+    noResults: "Nessun oggetto trovato con questi filtri.",
+    catalogueLoading2: "⏳ Caricamento catalogo in corso…",
+    objectsPerPage: (n) => `${n} oggetti/pag`,
+    // Card fields
+    maxAltCard: "Max",
+    transit: "transito",
+    visibleMin: "min visibile/notte",
+    filters: "Filtri",
+    // Altitude curve
+    altCurveTitle: "CURVA DI ALTITUDINE",
+    horizonCustomActive: "— orizzonte custom attivo",
+    horizonFlat: "— orizzonte piatto (0°)",
+    visibleLegend: "visibile (sopra orizzonte +5°)",
+    notVisibleLegend: "non visibile / sotto orizzonte",
+    horizonLineLegend: "profilo orizzonte personalizzato",
+    visibleMinLegend: "min visibile",
+    // Setup tab
+    setupTitle: "CONFIGURAZIONE SETUP",
+    cameraCatalogTitle: "SELEZIONA CAMERA DAL CATALOGO",
+    searchCamera: "Cerca modello…",
+    allBrands: "Tutti",
+    colorAndMono: "Colori + Mono",
+    colorOnly: "Solo Colori (OSC)",
+    monoOnly: "Solo Mono",
+    colModel: "MODELLO", colSensor: "SENSORE", colPixel: "PIXEL",
+    colResolution: "RISOLUZIONE", colMp: "MP", colType: "TIPO",
+    noCameraFound: "Nessuna camera trovata",
+    cameraClickHint: (n) => `${n} risultati · clicca per compilare i parametri automaticamente`,
+    opticsTitle: "PARAMETRI OTTICI / PERSONALIZZATI",
+    focalLabel: "Focale telescopio (mm)",
+    apertureLabel: "Apertura telescopio (mm)",
+    cameraNameLabel: "Nome camera",
+    pixelSizeLabel: "Dimensione pixel (µm)",
+    sensorWLabel: "Sensore larghezza (pixel)",
+    sensorHLabel: "Sensore altezza (pixel)",
+    sensorTypeLabel: "Tipo sensore",
+    colorSensor: "Colori (OSC/One-Shot)",
+    monoSensor: "Monocromatica (Mono)",
+    computedTitle: "PARAMETRI CALCOLATI",
+    focalRatio: "Rapporto focale (f/)",
+    imageScale: "Scala immagine",
+    fovW: "Campo inquadrato (W)",
+    fovH: "Campo inquadrato (H)",
+    monoWarning: "⚠ Camera mono: la colonna \"Filtri\" indica i filtri necessari per ciascun oggetto. Pianifica le sessioni per filtro.",
+    // Horizon tab
+    horizonTitle: "PROFILO ORIZZONTE PERSONALIZZATO",
+    horizonDesc: (sep) => `Carica un file CSV con due colonne: azimut (0–359) e altezza ostacolo in gradi. Separatori accettati: virgola, punto e virgola, spazio, tab.`,
+    horizonExample: "→ Nord, ostacolo a 2.5°",
+    dropzone: "Clicca o trascina il file CSV del profilo orizzonte",
+    noProfileWarning: "Senza profilo personalizzato, il calcolo usa un orizzonte piatto a 0°. Puoi misurare il tuo orizzonte con applicazioni come Stellarium, Cartes du Ciel, oppure con fotometria panoramica.",
+    uniformAlt: "Oppure inserisci manualmente (altezza uniforme)",
+    uniformAltLabel: "° altezza uniforme su tutto l'orizzonte",
+    horizonPreviewLabel: "Profilo orizzonte (N→E→S→W→N)",
+    objFiltered: "oggetti filtrati",
+    page: "pagina",
+  },
+
+  en: {
+    appSubtitle: "MONTHLY ASTROPHOTOGRAPHY PLANNER",
+    tabObjects: "Objects",
+    tabSetup: "Setup",
+    tabHorizon: "Horizon",
+    period: "PERIOD",
+    coordinates: "COORDINATES",
+    latLabel: "Latitude °N",
+    lonLabel: "Longitude °E",
+    filterTech: "IMAGING MODE",
+    filterAll: "All",
+    filterNarrow: "Narrowband",
+    filterBroad: "Broadband",
+    summary: "SUMMARY",
+    catalogueLoading: "⏳ loading…",
+    catalogueOk: (n) => `✓ ${n.toLocaleString()} objects`,
+    catalogueFallback: (n) => `⚠ fallback (${n})`,
+    filtered: "Filtered",
+    excellent: "Excellent (≥75)",
+    good: "Good (45–74)",
+    horizonActive: "✓ Custom horizon active",
+    scale: "Scale",
+    fovLabel: "FOV",
+    currentSetup: "CURRENT SETUP",
+    camera: "Camera",
+    pixelSize: "Pixel size",
+    sensor: "Sensor",
+    resolution: "Resolution",
+    focal: "Focal length",
+    aperture: "Aperture",
+    horizonActiveTitle: "ACTIVE HORIZON",
+    profileLoaded: "✓ Profile loaded",
+    fileLabel: "File",
+    points: "Points",
+    avgAlt: "Avg alt",
+    maxAlt: "Max alt",
+    removeProfile: "✕ Remove profile",
+    noProfile: "No profile loaded.",
+    flatHorizon: "Horizon is considered flat at 0°.",
+    csvFormat: "EXPECTED CSV FORMAT",
+    searchPlaceholder: "🔍  Search by name, NGC, IC, Messier, constellation…",
+    allTypes: "All types",
+    magMax: "Max mag (e.g. 12)",
+    sizeMax: "Max size ′ (e.g. 30)",
+    reset: "✕ Reset",
+    openNGCOk: (n, p, tot) => `✓ OpenNGC+ext · ${n.toLocaleString()} objects filtered · page ${p}/${tot}`,
+    openNGCLoading: "⏳ Loading catalogue…",
+    openNGCError: (n) => `⚠ Fallback catalogue (${n} objects) — check connection`,
+    expandAll: "▼ Expand all",
+    collapseAll: "▲ Collapse all",
+    noResults: "No objects found with these filters.",
+    catalogueLoading2: "⏳ Loading catalogue…",
+    objectsPerPage: (n) => `${n} obj/page`,
+    maxAltCard: "Max",
+    transit: "transit",
+    visibleMin: "min visible/night",
+    filters: "Filters",
+    altCurveTitle: "ALTITUDE CURVE",
+    horizonCustomActive: "— custom horizon active",
+    horizonFlat: "— flat horizon (0°)",
+    visibleLegend: "visible (above horizon +5°)",
+    notVisibleLegend: "not visible / below horizon",
+    horizonLineLegend: "custom horizon profile",
+    visibleMinLegend: "min visible",
+    setupTitle: "SETUP CONFIGURATION",
+    cameraCatalogTitle: "SELECT CAMERA FROM CATALOGUE",
+    searchCamera: "Search model…",
+    allBrands: "All",
+    colorAndMono: "Color + Mono",
+    colorOnly: "Color only (OSC)",
+    monoOnly: "Mono only",
+    colModel: "MODEL", colSensor: "SENSOR", colPixel: "PIXEL",
+    colResolution: "RESOLUTION", colMp: "MP", colType: "TYPE",
+    noCameraFound: "No camera found",
+    cameraClickHint: (n) => `${n} results · click to auto-fill parameters`,
+    opticsTitle: "OPTICS / CUSTOM PARAMETERS",
+    focalLabel: "Telescope focal length (mm)",
+    apertureLabel: "Telescope aperture (mm)",
+    cameraNameLabel: "Camera name",
+    pixelSizeLabel: "Pixel size (µm)",
+    sensorWLabel: "Sensor width (pixels)",
+    sensorHLabel: "Sensor height (pixels)",
+    sensorTypeLabel: "Sensor type",
+    colorSensor: "Color (OSC/One-Shot)",
+    monoSensor: "Monochrome (Mono)",
+    computedTitle: "COMPUTED PARAMETERS",
+    focalRatio: "Focal ratio (f/)",
+    imageScale: "Image scale",
+    fovW: "Field of view (W)",
+    fovH: "Field of view (H)",
+    monoWarning: "⚠ Mono camera: the \"Filters\" column shows which filters are needed per object. Plan sessions by filter.",
+    horizonTitle: "CUSTOM HORIZON PROFILE",
+    horizonDesc: () => `Upload a CSV file with two columns: azimuth (0–359) and obstacle height in degrees. Accepted separators: comma, semicolon, space, tab.`,
+    horizonExample: "→ North, obstacle at 2.5°",
+    dropzone: "Click or drag the horizon profile CSV file",
+    noProfileWarning: "Without a custom profile, calculation uses a flat horizon at 0°. You can measure your horizon with apps like Stellarium, Cartes du Ciel, or panoramic photography.",
+    uniformAlt: "Or enter manually (uniform height)",
+    uniformAltLabel: "° uniform altitude over the whole horizon",
+    horizonPreviewLabel: "Horizon profile (N→E→S→W→N)",
+    objFiltered: "objects filtered",
+    page: "page",
+  },
+};
+
+const MONTHS_IT = ["Gennaio","Febbraio","Marzo","Aprile","Maggio","Giugno","Luglio","Agosto","Settembre","Ottobre","Novembre","Dicembre"];
+const MONTHS_EN = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+
 
 export default function AstroPlanner() {
   const now = new Date();
+  const [lang, setLang] = useState(() => {
+    try { return localStorage.getItem("astroplan-lang") || "it"; } catch { return "it"; }
+  });
+  const t = (key, ...args) => {
+    const v = TRANSLATIONS[lang][key];
+    return typeof v === "function" ? v(...args) : (v ?? key);
+  };
+  const MONTHS = lang === "it" ? MONTHS_IT : MONTHS_EN;
+  const toggleLang = () => {
+    const next = lang === "it" ? "en" : "it";
+    setLang(next);
+    try { localStorage.setItem("astroplan-lang", next); } catch {}
+  };
   const [settings, setSettings] = useState({
     lat: 45.5,
     lon: 10.2,
@@ -1283,23 +1518,39 @@ export default function AstroPlanner() {
             ASTRO<span style={{ color: "#e76f51" }}>PLAN</span>
           </div>
           <div style={{ fontSize: 11, color: "#475569", letterSpacing: 1 }}>
-            PIANIFICATORE ASTROFOTOGRAFICO MENSILE
+            {t("appSubtitle")}
           </div>
         </div>
-        <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
-          {["results", "setup", "horizon"].map(t => (
-            <button key={t} onClick={() => setTab(t)} style={{
-              background: tab === t ? "#1e3a5f" : "transparent",
-              border: `1px solid ${tab === t ? "#3b82f6" : "#1e3a5f"}`,
+        <div style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
+          {/* Language toggle */}
+          <button onClick={toggleLang} style={{
+            background: "transparent",
+            border: "1px solid #1e3a5f",
+            borderRadius: 6,
+            color: "#64748b",
+            padding: "6px 12px",
+            cursor: "pointer",
+            fontSize: 11,
+            letterSpacing: 1,
+            display: "flex",
+            alignItems: "center",
+            gap: 5,
+          }}>
+            {lang === "it" ? "🇮🇹 IT" : "🇬🇧 EN"}
+          </button>
+          {["results", "setup", "horizon"].map(tabKey => (
+            <button key={tabKey} onClick={() => setTab(tabKey)} style={{
+              background: tab === tabKey ? "#1e3a5f" : "transparent",
+              border: `1px solid ${tab === tabKey ? "#3b82f6" : "#1e3a5f"}`,
               borderRadius: 6,
-              color: tab === t ? "#93c5fd" : "#475569",
+              color: tab === tabKey ? "#93c5fd" : "#475569",
               padding: "6px 14px",
               cursor: "pointer",
               fontSize: 12,
               letterSpacing: 1,
               textTransform: "uppercase",
             }}>
-              {t === "results" ? "Oggetti" : t === "setup" ? "Setup" : "Orizzonte"}
+              {tabKey === "results" ? t("tabObjects") : tabKey === "setup" ? t("tabSetup") : t("tabHorizon")}
             </button>
           ))}
         </div>
@@ -1326,7 +1577,7 @@ export default function AstroPlanner() {
           {tab === "results" && (<>
             {/* Month / Year */}
             <div style={{ marginBottom: 20 }}>
-              <div style={{ fontSize: 10, color: "#475569", letterSpacing: 1, marginBottom: 8 }}>PERIODO</div>
+              <div style={{ fontSize: 10, color: "#475569", letterSpacing: 1, marginBottom: 8 }}>{t("period")}</div>
               <select value={settings.month} onChange={e => s("month", +e.target.value)} style={fieldStyle}>
                 {MONTHS.map((m, i) => <option key={i} value={i}>{m}</option>)}
               </select>
@@ -1336,16 +1587,16 @@ export default function AstroPlanner() {
 
             {/* Coordinates */}
             <div style={{ marginBottom: 20 }}>
-              <div style={{ fontSize: 10, color: "#475569", letterSpacing: 1, marginBottom: 8 }}>COORDINATE</div>
-              <label style={{ fontSize: 11, color: "#64748b" }}>Latitudine °N</label>
+              <div style={{ fontSize: 10, color: "#475569", letterSpacing: 1, marginBottom: 8 }}>{t("coordinates")}</div>
+              <label style={{ fontSize: 11, color: "#64748b" }}>{t("latLabel")}</label>
               <input type="number" step="0.01" value={settings.lat} onChange={e => s("lat", +e.target.value)} style={fieldStyle} />
-              <label style={{ fontSize: 11, color: "#64748b", marginTop: 6, display: "block" }}>Longitudine °E</label>
+              <label style={{ fontSize: 11, color: "#64748b", marginTop: 6, display: "block" }}>{t("lonLabel")}</label>
               <input type="number" step="0.01" value={settings.lon} onChange={e => s("lon", +e.target.value)} style={fieldStyle} />
             </div>
 
             {/* Filter */}
             <div style={{ marginBottom: 20 }}>
-              <div style={{ fontSize: 10, color: "#475569", letterSpacing: 1, marginBottom: 8 }}>FILTRO TECNICA</div>
+              <div style={{ fontSize: 10, color: "#475569", letterSpacing: 1, marginBottom: 8 }}>{t("filterTech")}</div>
               {["all", "narrowband", "broadband"].map(f => (
                 <button key={f} onClick={() => { setFilter(f); setPage(0); }} style={{
                   display: "block", width: "100%",
@@ -1355,72 +1606,69 @@ export default function AstroPlanner() {
                   color: filter === f ? "#93c5fd" : "#475569",
                   padding: "5px 10px", cursor: "pointer", fontSize: 11, textAlign: "left", marginBottom: 4,
                 }}>
-                  {f === "all" ? "Tutti" : MODES[f].icon + " " + MODES[f].label}
+                  {f === "all" ? t("filterAll") : f === "narrowband" ? `${MODES[f].icon} ${t("filterNarrow")}` : `${MODES[f].icon} ${t("filterBroad")}`}
                 </button>
               ))}
             </div>
 
             {/* Quick stats */}
             <div style={{ background: "#0a1628", borderRadius: 8, padding: 12, border: "1px solid #1e3a5f" }}>
-              <div style={{ fontSize: 10, color: "#475569", letterSpacing: 1, marginBottom: 8 }}>RIEPILOGO</div>
+              <div style={{ fontSize: 10, color: "#475569", letterSpacing: 1, marginBottom: 8 }}>{t("summary")}</div>
               <div style={{ fontSize: 12, color: "#64748b" }}>
-                <div>Catalogo:
-                  <span style={{ marginLeft: 6, color: catalogueStatus === "ok" ? "#4ade80" : catalogueStatus === "loading" ? "#facc15" : "#f87171" }}>
-                    {catalogueStatus === "loading" ? "⏳ caricamento…" : catalogueStatus === "ok" ? `✓ ${catalogueCount.toLocaleString()}` : `⚠ fallback`}
+                <div>
+                  <span style={{ marginLeft: 0, color: catalogueStatus === "ok" ? "#4ade80" : catalogueStatus === "loading" ? "#facc15" : "#f87171" }}>
+                    {catalogueStatus === "loading" ? t("catalogueLoading") : catalogueStatus === "ok" ? t("catalogueOk", catalogueCount) : t("catalogueFallback", catalogueCount)}
                   </span>
                 </div>
-                <div style={{ marginTop: 4 }}>Filtrati: <span style={{ color: "#93c5fd" }}>{filteredCatalogue.length.toLocaleString()}</span></div>
-                <div>Ottimi (≥75): <span style={{ color: "#4ade80" }}>{scoredPage.filter(r => r.score >= 75).length}</span></div>
-                <div>Buoni (45–74): <span style={{ color: "#facc15" }}>{scoredPage.filter(r => r.score >= 45 && r.score < 75).length}</span></div>
-                {horizonProfile && <div style={{ marginTop: 6, color: "#e76f51", fontSize: 10 }}>✓ Orizzonte custom attivo</div>}
-                {fov && <div style={{ marginTop: 4, color: "#a78bfa", fontSize: 10 }}>Scala: {fov}″/px</div>}
-                {fovData && <div style={{ color: "#4ade80", fontSize: 10 }}>FOV: {fovData.fovW.toFixed(1)}′×{fovData.fovH.toFixed(1)}′</div>}
+                <div style={{ marginTop: 4 }}>{t("filtered")}: <span style={{ color: "#93c5fd" }}>{filteredCatalogue.length.toLocaleString()}</span></div>
+                <div>{t("excellent")}: <span style={{ color: "#4ade80" }}>{scoredPage.filter(r => r.score >= 75).length}</span></div>
+                <div>{t("good")}: <span style={{ color: "#facc15" }}>{scoredPage.filter(r => r.score >= 45 && r.score < 75).length}</span></div>
+                {horizonProfile && <div style={{ marginTop: 6, color: "#e76f51", fontSize: 10 }}>{t("horizonActive")}</div>}
+                {fov && <div style={{ marginTop: 4, color: "#a78bfa", fontSize: 10 }}>{t("scale")}: {fov}″/px</div>}
+                {fovData && <div style={{ color: "#4ade80", fontSize: 10 }}>{t("fovLabel")}: {fovData.fovW.toFixed(1)}′×{fovData.fovH.toFixed(1)}′</div>}
               </div>
             </div>
           </>)}
 
           {tab === "setup" && (<>
-            <div style={{ fontSize: 10, color: "#475569", letterSpacing: 1, marginBottom: 16 }}>SETUP CORRENTE</div>
-
+            <div style={{ fontSize: 10, color: "#475569", letterSpacing: 1, marginBottom: 16 }}>{t("currentSetup")}</div>
             <div style={{ fontSize: 11, color: "#64748b", lineHeight: 2 }}>
-              <div>Camera:<br /><span style={{ color: "#e2e8f0", fontSize: 12 }}>{settings.camera || "—"}</span></div>
-              <div style={{ marginTop: 10 }}>Pixel size:<br /><span style={{ color: "#a78bfa", fontSize: 12 }}>{settings.pixelSize ? `${settings.pixelSize} µm` : "—"}</span></div>
-              <div style={{ marginTop: 10 }}>Sensore:<br /><span style={{ color: settings.colorCamera ? "#48cae4" : "#c084fc", fontSize: 12 }}>{settings.colorCamera ? "Colori (OSC)" : "Mono"}</span></div>
-              <div style={{ marginTop: 10 }}>Risoluzione:<br /><span style={{ color: "#64748b", fontSize: 12 }}>{settings.sensorW && settings.sensorH ? `${settings.sensorW}×${settings.sensorH}` : "—"}</span></div>
+              <div>{t("camera")}:<br /><span style={{ color: "#e2e8f0", fontSize: 12 }}>{settings.camera || "—"}</span></div>
+              <div style={{ marginTop: 10 }}>{t("pixelSize")}:<br /><span style={{ color: "#a78bfa", fontSize: 12 }}>{settings.pixelSize ? `${settings.pixelSize} µm` : "—"}</span></div>
+              <div style={{ marginTop: 10 }}>{t("sensor")}:<br /><span style={{ color: settings.colorCamera ? "#48cae4" : "#c084fc", fontSize: 12 }}>{settings.colorCamera ? t("colorSensor") : t("monoSensor")}</span></div>
+              <div style={{ marginTop: 10 }}>{t("resolution")}:<br /><span style={{ color: "#64748b", fontSize: 12 }}>{settings.sensorW && settings.sensorH ? `${settings.sensorW}×${settings.sensorH}` : "—"}</span></div>
             </div>
-
             <div style={{ marginTop: 20, borderTop: "1px solid #1e293b", paddingTop: 16, fontSize: 11, color: "#64748b", lineHeight: 2 }}>
-              <div>Focale:<br /><span style={{ color: "#93c5fd", fontSize: 12 }}>{settings.focal ? `${settings.focal} mm` : "—"}</span></div>
-              <div style={{ marginTop: 10 }}>Apertura:<br /><span style={{ color: "#93c5fd", fontSize: 12 }}>{settings.aperture ? `f/${(settings.focal/settings.aperture).toFixed(1)}` : "—"}</span></div>
-              {fov && <div style={{ marginTop: 10 }}>Scala:<br /><span style={{ color: "#a78bfa", fontSize: 12 }}>{fov}″/px</span></div>}
-              {fovData && <div style={{ marginTop: 10 }}>FOV:<br /><span style={{ color: "#4ade80", fontSize: 12 }}>{fovData.fovW.toFixed(1)}′×{fovData.fovH.toFixed(1)}′</span></div>}
+              <div>{t("focal")}:<br /><span style={{ color: "#93c5fd", fontSize: 12 }}>{settings.focal ? `${settings.focal} mm` : "—"}</span></div>
+              <div style={{ marginTop: 10 }}>{t("aperture")}:<br /><span style={{ color: "#93c5fd", fontSize: 12 }}>{settings.aperture ? `f/${(settings.focal/settings.aperture).toFixed(1)}` : "—"}</span></div>
+              {fov && <div style={{ marginTop: 10 }}>{t("scale")}:<br /><span style={{ color: "#a78bfa", fontSize: 12 }}>{fov}″/px</span></div>}
+              {fovData && <div style={{ marginTop: 10 }}>{t("fovLabel")}:<br /><span style={{ color: "#4ade80", fontSize: 12 }}>{fovData.fovW.toFixed(1)}′×{fovData.fovH.toFixed(1)}′</span></div>}
             </div>
           </>)}
 
           {tab === "horizon" && (<>
-            <div style={{ fontSize: 10, color: "#475569", letterSpacing: 1, marginBottom: 16 }}>ORIZZONTE ATTIVO</div>
-
+            <div style={{ fontSize: 10, color: "#475569", letterSpacing: 1, marginBottom: 16 }}>{t("horizonActiveTitle")}</div>
             {horizonProfile ? (<>
-              <div style={{ fontSize: 11, color: "#4ade80", marginBottom: 10 }}>✓ Profilo caricato</div>
-              <div style={{ fontSize: 11, color: "#64748b" }}>File: <span style={{ color: "#e2e8f0" }}>{horizonName}</span></div>
+              <div style={{ fontSize: 11, color: "#4ade80", marginBottom: 10 }}>{t("profileLoaded")}</div>
+              <div style={{ fontSize: 11, color: "#64748b" }}>{t("fileLabel")}: <span style={{ color: "#e2e8f0" }}>{horizonName}</span></div>
               <div style={{ marginTop: 12, fontSize: 11, color: "#64748b" }}>
-                Punti: <span style={{ color: "#93c5fd" }}>{horizonProfile.filter(v => v > 0).length} az.</span><br />
-                Alt. media: <span style={{ color: "#e76f51" }}>{(horizonProfile.reduce((a, b) => a + b, 0) / 360).toFixed(1)}°</span><br />
-                Alt. max: <span style={{ color: "#f87171" }}>{Math.max(...horizonProfile).toFixed(1)}°</span>
+                {t("points")}: <span style={{ color: "#93c5fd" }}>{horizonProfile.filter(v => v > 0).length} az.</span><br />
+                {t("avgAlt")}: <span style={{ color: "#e76f51" }}>{(horizonProfile.reduce((a, b) => a + b, 0) / 360).toFixed(1)}°</span><br />
+                {t("maxAlt")}: <span style={{ color: "#f87171" }}>{Math.max(...horizonProfile).toFixed(1)}°</span>
               </div>
               <button onClick={() => { setHorizonProfile(null); setHorizonName(""); }}
                 style={{ marginTop: 16, background: "#1a0a06", border: "1px solid #e76f5155", borderRadius: 6, color: "#e76f51", fontSize: 11, padding: "6px 10px", cursor: "pointer", width: "100%" }}>
-                ✕ Rimuovi profilo
+                {t("removeProfile")}
               </button>
             </>) : (
               <div style={{ fontSize: 11, color: "#334155", lineHeight: 1.8 }}>
-                Nessun profilo caricato.<br />
-                <span style={{ color: "#475569" }}>L'orizzonte è considerato piatto a 0°.</span>
+                {t("noProfile")}<br />
+                <span style={{ color: "#475569" }}>{t("flatHorizon")}</span>
               </div>
             )}
 
             <div style={{ marginTop: 24, borderTop: "1px solid #1e293b", paddingTop: 16, fontSize: 10, color: "#334155", lineHeight: 1.9 }}>
-              <div style={{ color: "#475569", marginBottom: 6 }}>FORMATO CSV ATTESO</div>
+              <div style={{ color: "#475569", marginBottom: 6 }}>{t("csvFormat")}</div>
               <code style={{ color: "#64748b", fontSize: 9 }}>azimut;altezza<br />0;5<br />45;12<br />90;8<br />…</code>
             </div>
           </>)}
@@ -1442,28 +1690,28 @@ export default function AstroPlanner() {
               {/* Search + filter bar */}
               <div style={{ background: "#080f1e", border: "1px solid #1e3a5f", borderRadius: 10, padding: 12, marginBottom: 14, display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
                 <input
-                  placeholder="🔍  Cerca per nome, NGC, IC, Messier, costellazione…"
+                  placeholder={t("searchPlaceholder")}
                   value={search}
                   onChange={e => { setSearch(e.target.value); setPage(0); }}
                   style={{ ...fieldStyle, flex: "2 1 220px", background: "#060c18" }}
                 />
                 <select value={typeFilter} onChange={e => { setTypeFilter(e.target.value); setPage(0); }}
                   style={{ ...fieldStyle, flex: "1 1 160px", background: "#060c18" }}>
-                  <option value="all">Tutti i tipi</option>
-                  {typeLabels.filter(t => t !== "all").map(t => <option key={t} value={t}>{t}</option>)}
+                  <option value="all">{t("allTypes")}</option>
+                  {typeLabels.filter(tl => tl !== "all").map(tl => <option key={tl} value={tl}>{tl}</option>)}
                 </select>
-                <input type="number" placeholder="Mag max (es. 12)" value={minMag}
+                <input type="number" placeholder={t("magMax")} value={minMag}
                   onChange={e => { setMinMag(e.target.value); setPage(0); }}
                   style={{ ...fieldStyle, flex: "0 1 140px", background: "#060c18" }}
                 />
-                <input type="number" placeholder="Dim. max ′ (es. 30)" value={maxSize}
+                <input type="number" placeholder={t("sizeMax")} value={maxSize}
                   onChange={e => { setMaxSize(e.target.value); setPage(0); }}
                   style={{ ...fieldStyle, flex: "0 1 140px", background: "#060c18" }}
                 />
                 {(search || typeFilter !== "all" || minMag || maxSize) && (
                   <button onClick={() => { setSearch(""); setTypeFilter("all"); setMinMag(""); setMaxSize(""); setPage(0); }}
                     style={{ background: "#1a0f06", border: "1px solid #e76f5155", borderRadius: 6, color: "#e76f51", fontSize: 11, padding: "6px 12px", cursor: "pointer" }}>
-                    ✕ Reset
+                    {t("reset")}
                   </button>
                 )}
               </div>
@@ -1472,25 +1720,25 @@ export default function AstroPlanner() {
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
                 <div style={{ fontSize: 12, color: "#475569" }}>
                   {catalogueStatus === "loading"
-                    ? <span style={{ color: "#facc15" }}>⏳ Caricamento OpenNGC…</span>
+                    ? <span style={{ color: "#facc15" }}>{t("openNGCLoading")}</span>
                     : catalogueStatus === "ok"
-                      ? <span><span style={{ color: "#4ade80" }}>✓ OpenNGC</span> · <span style={{ color: "#93c5fd" }}>{filteredCatalogue.length.toLocaleString()}</span> oggetti filtrati · pagina {page + 1}/{totalPages || 1}</span>
-                      : <span style={{ color: "#f87171" }}>⚠ Catalogo fallback ({catalogueCount} oggetti) — verifica connessione</span>
+                      ? <span><span style={{ color: "#4ade80" }}>✓ OpenNGC+ext</span> · <span style={{ color: "#93c5fd" }}>{filteredCatalogue.length.toLocaleString()}</span> {t("objFiltered")} · {t("page")} {page + 1}/{totalPages || 1}</span>
+                      : <span style={{ color: "#f87171" }}>{t("openNGCError", catalogueCount)}</span>
                   }
                   <span style={{ marginLeft: 12, color: "#334155" }}>{MONTHS[settings.month]} {settings.year} · {settings.lat}°N {settings.lon}°E</span>
                 </div>
                 <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                   <button onClick={() => setExpanded(Object.fromEntries(scoredPage.map(o => [o.id, true])))}
-                    style={{ background: "#0a1628", border: "1px solid #1e3a5f", borderRadius: 6, color: "#64748b", fontSize: 11, padding: "5px 12px", cursor: "pointer" }}>▼ Apri tutte</button>
+                    style={{ background: "#0a1628", border: "1px solid #1e3a5f", borderRadius: 6, color: "#64748b", fontSize: 11, padding: "5px 12px", cursor: "pointer" }}>{t("expandAll")}</button>
                   <button onClick={() => setExpanded({})}
-                    style={{ background: "#0a1628", border: "1px solid #1e3a5f", borderRadius: 6, color: "#64748b", fontSize: 11, padding: "5px 12px", cursor: "pointer" }}>▲ Chiudi tutte</button>
+                    style={{ background: "#0a1628", border: "1px solid #1e3a5f", borderRadius: 6, color: "#64748b", fontSize: 11, padding: "5px 12px", cursor: "pointer" }}>{t("collapseAll")}</button>
                 </div>
               </div>
 
               <div style={{ display: "grid", gap: 10 }}>
                 {scoredPage.length === 0 && (
                   <div style={{ textAlign: "center", padding: 40, color: "#334155", fontSize: 14 }}>
-                    {catalogueStatus === "loading" ? "⏳ Caricamento catalogo in corso…" : "Nessun oggetto trovato con questi filtri."}
+                    {catalogueStatus === "loading" ? t("catalogueLoading2") : t("noResults")}
                   </div>
                 )}
                 {scoredPage.map(obj => {
@@ -1544,9 +1792,9 @@ export default function AstroPlanner() {
                         </div>
                         <div style={{ display: "flex", gap: 16, fontSize: 11, flexWrap: "wrap" }}>
                           <span style={{ color: "#a78bfa" }}>⏱ {obj.expHours}</span>
-                          <span style={{ color: "#67e8f9" }}>▲ max {obj.maxAlt}°</span>
-                          <span style={{ color: "#86efac" }}>🕐 transito ~{obj.transit}</span>
-                          <span style={{ color: "#fcd34d" }}>🌙 {obj.mins} min visibile/notte</span>
+                          <span style={{ color: "#67e8f9" }}>▲ {t("maxAltCard")} {obj.maxAlt}°</span>
+                          <span style={{ color: "#86efac" }}>🕐 {t("transit")} ~{obj.transit}</span>
+                          <span style={{ color: "#fcd34d" }}>🌙 {obj.mins} {t("visibleMin")}</span>
                           <span style={{ color: "#94a3b8" }}>⌀ {obj.size}′ · mv {obj.mag}</span>
                           {obj.filters && <span style={{ color: MODES[obj.mode].color }}>🔬 {obj.filters}</span>}
                         </div>
@@ -1581,10 +1829,10 @@ export default function AstroPlanner() {
                           {/* Altitude chart + legend */}
                           <div style={{ flex: 1, minWidth: 300 }}>
                             <div style={{ fontSize: 10, color: "#475569", marginBottom: 6, letterSpacing: 1 }}>
-                              CURVA DI ALTITUDINE &nbsp;19:00 → 08:00
+                              {t("altCurveTitle")} &nbsp;19:00 → 08:00
                               {horizonProfile
-                                ? <span style={{ color: "#e76f51", marginLeft: 8 }}>— orizzonte custom attivo</span>
-                                : <span style={{ color: "#334155", marginLeft: 8 }}>— orizzonte piatto (0°)</span>
+                                ? <span style={{ color: "#e76f51", marginLeft: 8 }}>{t("horizonCustomActive")}</span>
+                                : <span style={{ color: "#334155", marginLeft: 8 }}>{t("horizonFlat")}</span>
                               }
                             </div>
                             <AltitudeCurve
@@ -1592,15 +1840,15 @@ export default function AstroPlanner() {
                               hasCustomHorizon={!!horizonProfile}
                             />
                             <div style={{ fontSize: 10, color: "#475569", lineHeight: 1.9, marginTop: 8 }}>
-                              <div><span style={{ color: "#4ade80" }}>━</span> visibile (sopra orizzonte +5°)</div>
-                              <div><span style={{ color: "#475569" }}>━</span> non visibile / sotto orizzonte</div>
-                              {horizonProfile && <div><span style={{ color: "#e76f51" }}>╌</span> profilo orizzonte personalizzato</div>}
+                              <div><span style={{ color: "#4ade80" }}>━</span> {t("visibleLegend")}</div>
+                              <div><span style={{ color: "#475569" }}>━</span> {t("notVisibleLegend")}</div>
+                              {horizonProfile && <div><span style={{ color: "#e76f51" }}>╌</span> {t("horizonLineLegend")}</div>}
                               <div style={{ marginTop: 6 }}>
                                 <span style={{ color: "#67e8f9" }}>▲ Max: {obj.maxAlt}°</span>
                                 &nbsp;·&nbsp;
-                                <span style={{ color: "#fcd34d" }}>🌙 {obj.mins} min visibile</span>
+                                <span style={{ color: "#fcd34d" }}>🌙 {obj.mins} {t("visibleMinLegend")}</span>
                                 &nbsp;·&nbsp;
-                                <span style={{ color: "#86efac" }}>🕐 transito {obj.transit}</span>
+                                <span style={{ color: "#86efac" }}>🕐 {t("transit")} {obj.transit}</span>
                               </div>
                             </div>
                           </div>
@@ -1648,17 +1896,17 @@ export default function AstroPlanner() {
               fieldStyle={fieldStyle}
               fov={fov}
               fovData={fovData}
+              t={t}
             />
           )}
 
           {/* ── Tab: Horizon ── */}
           {tab === "horizon" && (
             <div style={{ maxWidth: 600 }}>
-              <div style={{ fontSize: 14, color: "#93c5fd", marginBottom: 10, letterSpacing: 1 }}>PROFILO ORIZZONTE PERSONALIZZATO</div>
+              <div style={{ fontSize: 14, color: "#93c5fd", marginBottom: 10, letterSpacing: 1 }}>{t("horizonTitle")}</div>
               <div style={{ fontSize: 12, color: "#475569", marginBottom: 20, lineHeight: 1.7 }}>
-                Carica un file CSV con due colonne: <span style={{ color: "#93c5fd" }}>azimut (0–359)</span> e <span style={{ color: "#e76f51" }}>altezza ostacolo in gradi</span>.<br />
-                Separatori accettati: virgola, punto e virgola, spazio, tab.<br />
-                Esempio: <code style={{ background: "#0f172a", padding: "1px 6px", borderRadius: 4 }}>0,2.5</code> → Nord, ostacolo a 2.5°
+                {t("horizonDesc")}<br />
+                {t("horizonExample")}
               </div>
 
               <div style={{
@@ -1673,20 +1921,20 @@ export default function AstroPlanner() {
                   style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer", width: "100%", height: "100%" }} />
                 <div style={{ fontSize: 30, marginBottom: 8 }}>📂</div>
                 <div style={{ fontSize: 13, color: "#475569" }}>
-                  {horizonName ? <span style={{ color: "#4ade80" }}>✓ {horizonName}</span> : "Clicca o trascina il file CSV del profilo orizzonte"}
+                  {horizonName ? <span style={{ color: "#4ade80" }}>✓ {horizonName}</span> : t("dropzone")}
                 </div>
               </div>
 
-              {horizonProfile && <HorizonPreview profile={horizonProfile} />}
+              {horizonProfile && <HorizonPreview profile={horizonProfile} lang={lang} t={t} />}
 
               {!horizonProfile && (
                 <div style={{ marginTop: 20, background: "#0a1628", borderRadius: 8, padding: 14, border: "1px solid #1e3a5f", fontSize: 12, color: "#475569" }}>
-                  Senza profilo personalizzato, il calcolo usa un orizzonte piatto a 0°. Puoi misurare il tuo orizzonte con applicazioni come <em>Stellarium</em>, <em>Cartes du Ciel</em>, oppure con fotometria panoramica.
+                  {t("noProfileWarning")}
                 </div>
               )}
 
               <div style={{ marginTop: 20 }}>
-                <div style={{ fontSize: 12, color: "#475569", marginBottom: 8 }}>Oppure inserisci manualmente (altezza uniforme)</div>
+                <div style={{ fontSize: 12, color: "#475569", marginBottom: 8 }}>{t("uniformAlt")}</div>
                 <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
                   <input type="number" min={0} max={45} step={0.5} placeholder="es. 5"
                     style={{ ...fieldStyle, width: 100 }}
@@ -1694,7 +1942,7 @@ export default function AstroPlanner() {
                       const alt = +e.target.value;
                       if (!isNaN(alt)) setHorizonProfile(new Array(360).fill(alt));
                     }} />
-                  <span style={{ fontSize: 12, color: "#64748b" }}>° altezza uniforme su tutto l'orizzonte</span>
+                  <span style={{ fontSize: 12, color: "#64748b" }}>{t("uniformAltLabel")}</span>
                 </div>
               </div>
             </div>
