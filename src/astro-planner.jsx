@@ -950,6 +950,19 @@ export default function AstroPlanner() {
 
   const s = (k, v) => setSettings(prev => ({ ...prev, [k]: v }));
 
+  // Force full-viewport layout on the host document
+  useEffect(() => {
+    const style = document.createElement("style");
+    style.id = "astroplan-global";
+    style.textContent = `
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+      html, body { width: 100%; height: 100%; overflow-x: hidden; background: #060c18; }
+      #root, [data-reactroot] { width: 100%; min-height: 100vh; display: block; }
+    `;
+    document.head.appendChild(style);
+    return () => { const el = document.getElementById("astroplan-global"); if (el) el.remove(); };
+  }, []);
+
   const fieldStyle = {
     background: "#0f172a",
     border: "1px solid #1e3a5f",
