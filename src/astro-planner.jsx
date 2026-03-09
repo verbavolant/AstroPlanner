@@ -108,6 +108,90 @@ function buildNightCurve(ra, dec, lat, lon, date, horizonProfile) {
   return points;
 }
 
+// ─── Supplementary Catalogue Parsers ─────────────────────────────────────────
+
+function parseSharpless(csvText) {
+  const lines = csvText.trim().split("\n").slice(1);
+  return lines.map(line => {
+    const p = line.split(";");
+    if (p.length < 4) return null;
+    const ra = parseFloat(p[1]), dec = parseFloat(p[2]);
+    const size = parseFloat(p[3]) || 5;
+    const notes = (p[5] || "").trim();
+    if (isNaN(ra) || isNaN(dec)) return null;
+    return {
+      id: p[0].trim(), name: notes || p[0].trim(), catalogName: p[0].trim(),
+      ra, dec, type: "Regione HII", typeCode: "HII",
+      mag: 99, size, mode: "narrowband", filters: "Hα, OIII, SII",
+      expHours: size > 60 ? "8–20h" : size > 20 ? "5–12h" : "3–8h",
+      description: notes || "Nebulosa HII (Sharpless)",
+      constellation: "",
+    };
+  }).filter(Boolean);
+}
+
+function parseBarnard(csvText) {
+  const lines = csvText.trim().split("\n").slice(1);
+  return lines.map(line => {
+    const p = line.split(";");
+    if (p.length < 4) return null;
+    const ra = parseFloat(p[1]), dec = parseFloat(p[2]);
+    const size = parseFloat(p[3]) || 5;
+    const notes = (p[4] || "").trim();
+    if (isNaN(ra) || isNaN(dec)) return null;
+    return {
+      id: p[0].trim(), name: notes || p[0].trim(), catalogName: p[0].trim(),
+      ra, dec, type: "Nebulosa oscura", typeCode: "DN",
+      mag: 99, size, mode: "broadband", filters: "LRGB / OSC",
+      expHours: "4–10h",
+      description: notes || "Nebulosa oscura (Barnard)",
+      constellation: "",
+    };
+  }).filter(Boolean);
+}
+
+function parseAbellPN(csvText) {
+  const lines = csvText.trim().split("\n").slice(1);
+  return lines.map(line => {
+    const p = line.split(";");
+    if (p.length < 4) return null;
+    const ra = parseFloat(p[1]), dec = parseFloat(p[2]);
+    const size = parseFloat(p[3]) || 1;
+    const mag = parseFloat(p[4]) || 99;
+    const notes = (p[5] || "").trim();
+    if (isNaN(ra) || isNaN(dec)) return null;
+    return {
+      id: p[0].trim(), name: notes || p[0].trim(), catalogName: p[0].trim(),
+      ra, dec, type: "Nebulosa planetaria", typeCode: "PN",
+      mag, size, mode: "narrowband", filters: "Hα, OIII",
+      expHours: "6–15h",
+      description: notes || "Planetaria debole (Abell)",
+      constellation: "",
+    };
+  }).filter(Boolean);
+}
+
+function parseCollMel(csvText) {
+  const lines = csvText.trim().split("\n").slice(1);
+  return lines.map(line => {
+    const p = line.split(";");
+    if (p.length < 4) return null;
+    const ra = parseFloat(p[1]), dec = parseFloat(p[2]);
+    const size = parseFloat(p[3]) || 5;
+    const mag = parseFloat(p[4]) || 8;
+    const notes = (p[5] || "").trim();
+    if (isNaN(ra) || isNaN(dec)) return null;
+    return {
+      id: p[0].trim(), name: notes || p[0].trim(), catalogName: p[0].trim(),
+      ra, dec, type: "Ammasso aperto", typeCode: "OC",
+      mag, size, mode: "broadband", filters: "LRGB / OSC",
+      expHours: mag < 5 ? "1–3h" : "2–6h",
+      description: notes || "Ammasso aperto",
+      constellation: "",
+    };
+  }).filter(Boolean);
+}
+
 // ─── OpenNGC Fetch & Parser ───────────────────────────────────────────────────
 
 // Maps OpenNGC type codes → our internal type labels + imaging mode
@@ -1046,26 +1130,41 @@ export default function AstroPlanner() {
   const [page, setPage] = useState(0);
   const PAGE_SIZE = 50;
 
-  // Fetch OpenNGC on first load
+  // Fetch all catalogues in parallel on first load
+  // All CSV files must be placed in the /public folder of the Vite project
   useEffect(() => {
     setCatalogueStatus("loading");
-    const ONGC_URL = "https://raw.githubusercontent.com/mattiaverga/OpenNGC/master/database/NGC.csv";
-    fetch(ONGC_URL)
-      .then(r => { if (!r.ok) throw new Error(r.status); return r.text(); })
-      .then(text => {
-        const parsed = parseOpenNGC(text);
-        if (parsed.length > 100) {
-          setCatalogue(parsed);
-          setCatalogueCount(parsed.length);
-          setCatalogueStatus("ok");
-        } else {
-          throw new Error("too few objects");
+    const base = import.meta.env.BASE_URL;
+    const fetches = [
+      { url: base + "NGC.csv",       parser: parseOpenNGC,   label: "NGC" },
+      { url: base + "Sharpless.csv", parser: parseSharpless, label: "Sh2" },
+      { url: base + "Barnard.csv",   parser: parseBarnard,   label: "B"   },
+      { url: base + "AbellPN.csv",   parser: parseAbellPN,   label: "Abell PN" },
+      { url: base + "CollMel.csv",   parser: parseCollMel,   label: "Coll/Mel" },
+    ];
+
+    Promise.allSettled(fetches.map(f =>
+      fetch(f.url)
+        .then(r => { if (!r.ok) throw new Error(r.status); return r.text(); })
+        .then(text => ({ label: f.label, objects: f.parser(text) }))
+    )).then(results => {
+      const all = [];
+      let loaded = 0;
+      results.forEach(r => {
+        if (r.status === "fulfilled" && r.value.objects.length > 0) {
+          all.push(...r.value.objects);
+          loaded++;
         }
-      })
-      .catch(() => {
+      });
+      if (all.length > 100) {
+        setCatalogue(all);
+        setCatalogueCount(all.length);
+        setCatalogueStatus("ok");
+      } else {
         setCatalogueStatus("error");
         setCatalogueCount(CATALOGUE_FALLBACK.length);
-      });
+      }
+    });
   }, []);
 
   const date = useMemo(() => new Date(settings.year, settings.month, 15), [settings.year, settings.month]);
