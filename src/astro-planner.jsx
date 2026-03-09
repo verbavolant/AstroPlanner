@@ -964,10 +964,12 @@ export default function AstroPlanner() {
   return (
     <div style={{
       minHeight: "100vh",
+      width: "100%",
       background: "#060c18",
       color: "#e2e8f0",
       fontFamily: "'Courier New', monospace",
       padding: 0,
+      boxSizing: "border-box",
     }}>
       {/* Header */}
       <div style={{
@@ -1006,18 +1008,21 @@ export default function AstroPlanner() {
         </div>
       </div>
 
-      <div style={{ display: "flex", gap: 0, maxWidth: 1400, margin: "0 auto" }}>
-        {/* Sidebar – always visible */}
+      <div style={{ display: "flex", gap: 0, width: "100%", minHeight: "calc(100vh - 62px)" }}>
+        {/* Sidebar – fixed width, does not grow */}
         <div style={{
           width: 240,
           minWidth: 240,
+          maxWidth: 240,
           background: "#080f1e",
           borderRight: "1px solid #1e3a5f",
           padding: 16,
           minHeight: "calc(100vh - 62px)",
           flexShrink: 0,
+          flexGrow: 0,
           display: "flex",
           flexDirection: "column",
+          boxSizing: "border-box",
         }}>
           {/* Month / Year */}
           <div style={{ marginBottom: 20 }}>
@@ -1082,8 +1087,8 @@ export default function AstroPlanner() {
           </div>
         </div>
 
-        {/* Main content */}
-        <div style={{ flex: 1, padding: 20, overflow: "auto" }}>
+        {/* Main content – fills remaining width */}
+        <div style={{ flex: 1, minWidth: 0, padding: 20, overflow: "auto" }}>
 
           {/* ── Tab: Results ── */}
           {tab === "results" && (
